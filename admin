@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Turniej Bilardowy - System Organizacji</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style_with_tables_v3.css">
+  <link rel="stylesheet" href="style_with_tables_v4.css">
 </head>
 <body>
   <h1>🎱 Turniej Bilardowy <span style="font-size:14px; font-weight:700; opacity:0.85;">(ADMIN)</span></h1>
