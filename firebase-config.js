@@ -1,13 +1,17 @@
-// firebase-config.js
-// Wklej tu konfigurację z Firebase Console -> Project settings -> Your apps (Web)
-export const firebaseConfig = {
-  apiKey: "PASTE_ME",
-  authDomain: "PASTE_ME",
-  projectId: "PASTE_ME",
-  storageBucket: "PASTE_ME",
-  messagingSenderId: "PASTE_ME",
-  appId: "PASTE_ME"
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAIgTkQSTCGqyS200Vy-5dwQbgiVK2XThc",
+  authDomain: "bila-28483.firebaseapp.com",
+  projectId: "bila-28483",
+  storageBucket: "bila-28483.firebasestorage.app",
+  messagingSenderId: "919635473725",
+  appId: "1:919635473725:web:4980250d3eebee8f064154"
 };
 
-// Jedno ID turnieju (stałe) – możesz zmienić na inne jeśli chcesz kilka turniejów
-export const TOURNAMENT_ID = "main";
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
