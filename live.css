@@ -1,0 +1,27 @@
+/* live.css */
+:root { --bg:#0f3b2b; --card:rgba(255,255,255,0.92); --line:rgba(0,0,0,0.12); }
+body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:#111; }
+header{ padding:14px 16px; background:rgba(0,0,0,0.25); color:#fff; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+header h1{ margin:0; font-size:18px; }
+header .meta{ font-size:12px; opacity:0.9; }
+.container{ max-width:1200px; margin:0 auto; padding:14px; display:grid; grid-template-columns:1.2fr 0.8fr; gap:14px; }
+@media (max-width:900px){ .container{ grid-template-columns:1fr; } }
+.card{ background:var(--card); border-radius:12px; padding:12px; border:1px solid var(--line); }
+.card h2{ margin:0 0 10px 0; font-size:16px; }
+.tables{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; }
+.tableTile{ border:1px solid var(--line); border-radius:12px; padding:10px; background:rgba(255,255,255,0.85); }
+.tableTile .top{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-weight:800; }
+.tableTile .match{ margin-top:6px; font-weight:800; }
+.tableTile .score{ margin-top:2px; font-size:12px; opacity:0.75; }
+.badge{ font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid rgba(0,0,0,0.18); background:rgba(0,0,0,0.05); white-space:nowrap; }
+.queueItem{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed rgba(0,0,0,0.15); }
+.queueItem:last-child{ border-bottom:none; }
+.queueItem .left{ font-weight:800; }
+.queueItem .right{ font-size:12px; opacity:0.8; white-space:nowrap; }
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+th,td{ padding:6px 8px; border-bottom:1px solid rgba(0,0,0,0.12); text-align:left; }
+th{ font-size:12px; opacity:0.8; }
+.playoffGrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; }
+.pmatch{ border:1px solid var(--line); border-radius:12px; padding:10px; background:rgba(255,255,255,0.85); }
+.pmatch .hdr{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-weight:800; margin-bottom:6px; }
+.pmatch .names{ font-weight:800; }

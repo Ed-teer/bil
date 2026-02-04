@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Turniej Bilardowy – LIVE</title>
+  <link rel="stylesheet" href="live.css" />
+</head>
+<body>
+  <header>
+    <h1>🎱 Turniej Bilardowy – LIVE</h1>
+    <div class="meta" id="lastUpdate">Ładowanie…</div>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Grające stoły</h2>
+      <div id="tables" class="tables"></div>
+    </div>
+
+    <div class="card">
+      <h2>Kolejne mecze</h2>
+      <div id="queue"></div>
+    </div>
+
+    <div class="card" style="grid-column: 1 / -1;">
+      <h2>Ranking</h2>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Zawodnik</th><th>M</th><th>W</th><th>Partie</th><th>%</th></tr>
+        </thead>
+        <tbody id="ranking"></tbody>
+      </table>
+    </div>
+
+    <div class="card" style="grid-column: 1 / -1;">
+      <h2>Play-off</h2>
+      <div id="playoff" class="playoffGrid"></div>
+    </div>
+  </div>
+
+  <script type="module" src="live.js"></script>
+</body>
+</html>

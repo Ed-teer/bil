@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turniej Bilardowy - System Organizacji</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style_with_tables_v3.css">
+</head>
+<body>
+  <h1>🎱 Turniej Bilardowy <span style="font-size:14px; font-weight:700; opacity:0.85;">(ADMIN)</span></h1>
+
+  <div class="container">
+    <!-- Panel zarządzania graczami -->
+    <div class="panel">
+      <h2>👥 Zarządzanie Graczami</h2>
+
+      <h3 class="section-title">➕ Dodaj nowego gracza</h3>
+      <div>
+        <input type="text" id="newPlayerName" placeholder="Wprowadź imię i nazwisko">
+        <button type="button" id="addPlayerBtn">Dodaj do bazy</button>
+      </div>
+
+      <h3 class="section-title">📋 Baza graczy <span class="badge" id="playerCount">0</span></h3>
+      <div class="player-pool" id="playerPool">
+        <p>Brak graczy w bazie. Dodaj pierwszego gracza.</p>
+      </div>
+
+      <h3 class="section-title">🏆 Gracze w turnieju <span class="badge" id="tournamentPlayerCount">0</span></h3>
+      <div id="tournamentPlayers">
+        <p>Wybierz graczy z bazy powyżej</p>
+      </div>
+
+      <button type="button" id="startBtn" disabled>🚀 Rozpocznij turniej</button>
+      <button type="button" id="resetBtn" class="danger" disabled>🔄 Zresetuj turniej</button>
+      <button type="button" id="exportBtn" class="secondary" style="display:none;">📤 Eksportuj do CSV</button>
+
+      <div>
+        <label for="rounds">Liczba rund:</label>
+        <select id="rounds">
+          <option value="3">3 rundy</option>
+          <option value="4">4 rundy</option>
+          <option value="5">5 rund</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="gameType">Gramy do:</label>
+        <select id="gameType">
+          <option value="3">3-wygrane</option>
+          <option value="4">4-wygrane</option>
+          <option value="5">5-wygrane</option>
+        </select>
+      </div>
+
+      <div style="margin-top:12px;">
+        <label for="tableCount">Liczba stołów (3–5):</label>
+        <select id="tableCount">
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div style="font-weight:700; margin-bottom:6px;">Wybierz stoły (numery 1–9):</div>
+        <div id="tablesPicker" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
+        <div id="tablesHint" style="font-size:12px; color:#666; margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <!-- Panel meczów -->
+    <div class="panel">
+      <h2>
+        📅 Mecze
+        <span class="status-badge" id="tournamentStatus">Nieaktywny</span>
+        <span id="currentRoundInfo"></span>
+      </h2>
+      <div id="matchesContainer">
+        <p>Wybierz graczy i rozpocznij turniej, aby zobaczyć mecze.</p>
+      </div>
+    </div>
+
+    <!-- Panel rankingu -->
+    <div class="panel">
+      <h2>🏅 Ranking</h2>
+      <table id="rankingTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Zawodnik</th>
+            <th>Mecze</th>
+            <th>Wygrane</th>
+            <th>Partie</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <button type="button" id="generatePlayoffBtn">🔁 Wygeneruj drabinkę play-off</button>
+          </div>
+
+    <!-- Panel play-off -->
+    <div class="panel playoff-panel">
+      <h2>🏁 Drabinka play-off</h2>
+      <div class="playoff-toolbar">
+        <div class="playoff-legend">
+          <span class="table-badge table-active">Stół X</span>
+          <span class="table-badge table-wait">Czeka</span>
+        </div>
+        <div class="playoff-note">W play-off stół dostają tylko mecze gotowe (dwóch zawodników) i nieukończone.</div>
+      </div>
+      <div id="playoffContainer" class="playoff-container"></div>
+    </div>
+  </div>
+
+  <script type="module" src="admin_app.js"></script>
+</body>
+</html>
