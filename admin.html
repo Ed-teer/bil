@@ -1,120 +1,119 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Turniej Bilardowy - System Organizacji</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style_with_tables_v4.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Turniej Bilardowy (ADMIN)</title>
+
+  <!-- STYL – TWOJA WERSJA v4 -->
+  <link rel="stylesheet" href="style_with_tables_v4.css" />
 </head>
+
 <body>
-  <h1>🎱 Turniej Bilardowy <span style="font-size:14px; font-weight:700; opacity:0.85;">(ADMIN)</span></h1>
+  <h1>
+    🎱 Turniej Bilardowy
+    <span style="font-size:14px; font-weight:700; opacity:0.8;">(ADMIN)</span>
+  </h1>
 
-  <div class="container">
-    <!-- Panel zarządzania graczami -->
-    <div class="panel">
-      <h2>👥 Zarządzanie Graczami</h2>
+  <!-- 🔐 Pasek logowania Firebase (wstrzykiwany przez admin_app.js) -->
+  <!-- pojawi się automatycznie pod h1 -->
 
-      <h3 class="section-title">➕ Dodaj nowego gracza</h3>
-      <div>
-        <input type="text" id="newPlayerName" placeholder="Wprowadź imię i nazwisko">
-        <button type="button" id="addPlayerBtn">Dodaj do bazy</button>
-      </div>
+  <!-- ===================== -->
+  <!-- ZARZĄDZANIE GRACZAMI -->
+  <!-- ===================== -->
+  <section>
+    <h2>👥 Zarządzanie Graczami</h2>
 
-      <h3 class="section-title">📋 Baza graczy <span class="badge" id="playerCount">0</span></h3>
-      <div class="player-pool" id="playerPool">
-        <p>Brak graczy w bazie. Dodaj pierwszego gracza.</p>
-      </div>
+    <h3>➕ Dodaj nowego gracza</h3>
+    <input type="text" id="newPlayerName" placeholder="Wprowadź imię i nazwisko" />
+    <button id="addPlayerBtn">Dodaj do bazy</button>
 
-      <h3 class="section-title">🏆 Gracze w turnieju <span class="badge" id="tournamentPlayerCount">0</span></h3>
-      <div id="tournamentPlayers">
-        <p>Wybierz graczy z bazy powyżej</p>
-      </div>
+    <h3>📋 Baza graczy <span id="playerCount">0</span></h3>
+    <div id="playersDatabase"></div>
 
-      <button type="button" id="startBtn" disabled>🚀 Rozpocznij turniej</button>
-      <button type="button" id="resetBtn" class="danger" disabled>🔄 Zresetuj turniej</button>
-      <button type="button" id="exportBtn" class="secondary" style="display:none;">📤 Eksportuj do CSV</button>
+    <h3>🏆 Gracze w turnieju <span id="tournamentPlayerCount">0</span></h3>
+    <div id="tournamentPlayers"></div>
+  </section>
 
-      <div>
-        <label for="rounds">Liczba rund:</label>
-        <select id="rounds">
-          <option value="3">3 rundy</option>
-          <option value="4">4 rundy</option>
-          <option value="5">5 rund</option>
-        </select>
-      </div>
+  <!-- ===================== -->
+  <!-- USTAWIENIA TURNIEJU -->
+  <!-- ===================== -->
+  <section>
+    <h2>⚙️ Ustawienia turnieju</h2>
 
-      <div>
-        <label for="gameType">Gramy do:</label>
-        <select id="gameType">
-          <option value="3">3-wygrane</option>
-          <option value="4">4-wygrane</option>
-          <option value="5">5-wygrane</option>
-        </select>
-      </div>
+    <label>
+      Liczba rund:
+      <select id="roundCount">
+        <option value="3">3 rundy</option>
+        <option value="4">4 rundy</option>
+      </select>
+    </label>
 
-      <div style="margin-top:12px;">
-        <label for="tableCount">Liczba stołów (3–5):</label>
-        <select id="tableCount">
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-        </select>
-      </div>
+    <br /><br />
 
-      <div style="margin-top:12px;">
-        <div style="font-weight:700; margin-bottom:6px;">Wybierz stoły (numery 1–9):</div>
-        <div id="tablesPicker" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
-        <div id="tablesHint" style="font-size:12px; color:#666; margin-top:6px;"></div>
-      </div>
-    </div>
+    <label>
+      Gramy do:
+      <select id="winScore">
+        <option value="3">3-wygrane</option>
+        <option value="4">4-wygrane</option>
+      </select>
+    </label>
 
-    <!-- Panel meczów -->
-    <div class="panel">
-      <h2>
-        📅 Mecze
-        <span class="status-badge" id="tournamentStatus">Nieaktywny</span>
-        <span id="currentRoundInfo"></span>
-      </h2>
-      <div id="matchesContainer">
-        <p>Wybierz graczy i rozpocznij turniej, aby zobaczyć mecze.</p>
-      </div>
-    </div>
+    <br /><br />
 
-    <!-- Panel rankingu -->
-    <div class="panel">
-      <h2>🏅 Ranking</h2>
-      <table id="rankingTable">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Zawodnik</th>
-            <th>Mecze</th>
-            <th>Wygrane</th>
-            <th>Partie</th>
-            <th>%</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <label>
+      Liczba stołów (3–5):
+      <select id="tableCount">
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </label>
 
-      <button type="button" id="generatePlayoffBtn">🔁 Wygeneruj drabinkę play-off</button>
-          </div>
+    <br /><br />
 
-    <!-- Panel play-off -->
-    <div class="panel playoff-panel">
-      <h2>🏁 Drabinka play-off</h2>
-      <div class="playoff-toolbar">
-        <div class="playoff-legend">
-          <span class="table-badge table-active">Stół X</span>
-          <span class="table-badge table-wait">Czeka</span>
-        </div>
-        <div class="playoff-note">W play-off stół dostają tylko mecze gotowe (dwóch zawodników) i nieukończone.</div>
-      </div>
-      <div id="playoffContainer" class="playoff-container"></div>
-    </div>
-  </div>
+    <label>Wybierz stoły (numery 1–9):</label>
+    <div id="tableSelector"></div>
 
+    <br />
+
+    <button id="startTournamentBtn">🚀 Rozpocznij turniej</button>
+    <button id="resetTournamentBtn">♻️ Zresetuj turniej</button>
+  </section>
+
+  <!-- ===================== -->
+  <!-- MECZE / STOŁY -->
+  <!-- ===================== -->
+  <section>
+    <h2>🎱 Mecze ligowe</h2>
+    <div id="matchesContainer"></div>
+  </section>
+
+  <!-- ===================== -->
+  <!-- RANKING -->
+  <!-- ===================== -->
+  <section>
+    <h2>📊 Ranking</h2>
+    <div id="rankingContainer"></div>
+  </section>
+
+  <!-- ===================== -->
+  <!-- PLAY-OFF -->
+  <!-- ===================== -->
+  <section>
+    <h2>🏁 Play-off</h2>
+    <div id="playoffContainer"></div>
+  </section>
+
+  <!-- ===================== -->
+  <!-- SKRYPTY -->
+  <!-- ===================== -->
+
+  <!-- 1️⃣ GŁÓWNA LOGIKA TURNIEJU – v4 -->
+  <script src="script_with_tables_v4.js"></script>
+
+  <!-- 2️⃣ FIREBASE + SYNC (MUSI BYĆ MODULE) -->
   <script type="module" src="admin_app.js"></script>
 </body>
 </html>
