@@ -164,7 +164,15 @@ onSnapshot(ref, (snap) => {
   if (!data) return;
 
   const system = data.system;
-  const playoff = data.currentPlayoffBracket;
+ let playoff = null;
+try {
+  playoff = typeof data.currentPlayoffBracket === "string"
+    ? JSON.parse(data.currentPlayoffBracket)
+    : data.currentPlayoffBracket;
+} catch (e) {
+  playoff = null;
+}
+
 
   const ts = data.updatedAt?.toDate ? data.updatedAt.toDate() : null;
   elLast.textContent = ts ? `Ostatnia aktualizacja: ${fmtDate(ts)}` : "Połączono";
