@@ -34,14 +34,14 @@ async function saveStateToFirestore() {
   const systemSnapshot = readSystemFromLS();
   const playoffSnapshot = window.currentPlayoffBracket ?? readPlayoffFromLS() ?? null;
 
-  // UWAGA: nie zapisujemy “pustego nic” jeśli v10 jeszcze nie zdążył nic utworzyć
+  // nie zapisujemy “pustego nic” jeśli v10 jeszcze nie zdążył nic utworzyć
   if (!systemSnapshot) return;
 
   const payload = {
-  system: systemSnapshot ?? null,
-  currentPlayoffBracket: playoffSnapshot ? JSON.stringify(playoffSnapshot) : null,
-  updatedAt: serverTimestamp(),
-};
+    system: systemSnapshot,
+    currentPlayoffBracket: playoffSnapshot ? JSON.stringify(playoffSnapshot) : null,
+    updatedAt: serverTimestamp(),
+  };
 
   try {
     await setDoc(ref, payload, { merge: true });
