@@ -89,21 +89,46 @@ function renderQueue(system){
 }
 
 function renderRanking(system){
-  const ranking = system?.tournament?.ranking || [];
+  const players = system?.tournament?.players || [];
+  const statsMap = system?.tournament?.playerStats || {};
+  const manualOrder = system?.tournament?.manualOrder || {};
+
+  const ranked = players
+    .map(name => {
+      const s = statsMap[name] || { matches:0, wonGames:0, totalGames:0, byes:0 };
+      const ratio = s.totalGames > 0 ? (s.wonGames / s.totalGames) : 0;
+      return { name, s, ratio };
+    })
+    .sort((a,b) => {
+      if (b.ratio !== a.ratio) return b.ratio - a.ratio;
+      if ((b.s.wonGames ?? 0) !== (a.s.wonGames ?? 0)) return (b.s.wonGames ?? 0) - (a.s.wonGames ?? 0);
+
+      const ma = manualOrder[a.name];
+      const mb = manualOrder[b.name];
+      if (ma != null && mb == null) return -1;
+      if (ma == null && mb != null) return 1;
+      if (ma != null && mb != null && ma !== mb) return ma - mb;
+
+      return a.name.localeCompare(b.name, "pl");
+    });
+
   elRanking.innerHTML = "";
-  ranking.forEach((r, i) => {
+  ranked.forEach((r, i) => {
     const tr = document.createElement("tr");
+    const pct = r.s.totalGames > 0 ? ((r.s.wonGames / r.s.totalGames) * 100) : 0;
+
     tr.innerHTML = `
       <td>${i+1}</td>
-      <td>${r.name ?? ""}</td>
-      <td>${r.matches ?? 0}</td>
-      <td>${r.wins ?? 0}</td>
-      <td>${r.framesWon ?? 0}:${r.framesLost ?? 0}</td>
-      <td>${safePct(r.winRatio ?? 0)}%</td>
+      <td>${r.name}</td>
+      <td>${r.s.matches ?? 0}</td>
+      <td>${r.s.wonGames ?? 0}</td>
+      <td>${(r.s.wonGames ?? 0)} / ${(r.s.totalGames ?? 0)}</td>
+      <td>${pct.toFixed(1)}%</td>
     `;
     elRanking.appendChild(tr);
   });
 }
+
 
 function playoffMetaBadge(playoff, key){
   const meta = playoff?._meta?.matches?.[key];
