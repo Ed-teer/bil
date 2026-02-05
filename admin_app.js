@@ -38,10 +38,10 @@ async function saveStateToFirestore() {
   if (!systemSnapshot) return;
 
   const payload = {
-    system: systemSnapshot,
-    currentPlayoffBracket: playoffSnapshot,
-    updatedAt: serverTimestamp(),
-  };
+  system: systemSnapshot ?? null,
+  currentPlayoffBracket: playoffSnapshot ? JSON.stringify(playoffSnapshot) : null,
+  updatedAt: serverTimestamp(),
+};
 
   try {
     await setDoc(ref, payload, { merge: true });
