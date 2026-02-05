@@ -1147,6 +1147,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('generatePlayoffBtn')?.addEventListener('click', () => {
     currentPlayoffBracket = generatePlayoffBracket();
+    window.currentPlayoffBracket = currentPlayoffBracket;
+saveToLocalStorage();
     if (currentPlayoffBracket) {
       initPlayoffScheduler(currentPlayoffBracket);
       displayPlayoffBracket(currentPlayoffBracket);
