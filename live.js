@@ -162,6 +162,11 @@ function renderPlayoff(playoff){
 onSnapshot(ref, (snap) => {
   const data = snap.data();
   if (!data) return;
+  let system = null;
+let playoff = null;
+
+try { system = data.systemJson ? JSON.parse(data.systemJson) : null; } catch {}
+try { playoff = data.playoffJson ? JSON.parse(data.playoffJson) : null; } catch {}
 
   const system = data.system;
  let playoff = null;
