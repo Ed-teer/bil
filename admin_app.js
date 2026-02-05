@@ -49,7 +49,7 @@ onAuthStateChanged(auth, (user) => {
 // --- 1) załaduj istniejący skrypt aplikacji (klasyczny) ---
 await new Promise((resolve, reject) => {
   const s = document.createElement("script");
-  s.src = "script_with_tables_v4.js";
+  s.src = "script_with_tables_v10.js";
   s.onload = resolve;
   s.onerror = reject;
   document.body.appendChild(s);
