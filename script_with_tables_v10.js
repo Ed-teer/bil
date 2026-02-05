@@ -33,56 +33,6 @@ const system = {
     }
   }
 };
-// ===== Firebase/GitHub Pages sync helpers =====
-// Wystawiamy 'system' na window + robimy setter, który scala dane zamiast podmieniać referencję.
-// Dzięki temu kod, który używa stałej 'system', nadal działa, a zewnętrzne sync może robić: window.system = snapshot.
-(function bindSystemToWindow(){
-  const deepMerge = (target, src) => {
-    if (!src || typeof src !== 'object') return target;
-    for (const k of Object.keys(src)) {
-      const sv = src[k];
-      const tv = target[k];
-      if (Array.isArray(sv)) {
-        target[k] = sv.slice();
-      } else if (sv && typeof sv === 'object' && !(sv instanceof Date)) {
-        // Set traktujemy osobno
-        if (sv instanceof Set) {
-          target[k] = new Set(Array.from(sv));
-        } else if (tv && typeof tv === 'object' && !Array.isArray(tv) && !(tv instanceof Set)) {
-          deepMerge(tv, sv);
-        } else {
-          target[k] = deepMerge({}, sv);
-        }
-      } else {
-        target[k] = sv;
-      }
-    }
-    return target;
-  };
-
-  // początkowa ekspozycja
-  window.__SYSTEM_REF__ = system;
-
-  Object.defineProperty(window, 'system', {
-    configurable: true,
-    get() { return system; },
-    set(v) {
-      if (!v) return;
-      // specjalnie: playedPairs może przyjść jako tablica
-      if (v.tournament && Array.isArray(v.tournament.playedPairs)) {
-        v = {
-          ...v,
-          tournament: {
-            ...v.tournament,
-            playedPairs: new Set(v.tournament.playedPairs)
-          }
-        };
-      }
-      deepMerge(system, v);
-    }
-  });
-})();
-
 
 // Stały znacznik wolnego losu
 const BYE = 'bye';
@@ -185,7 +135,8 @@ function saveToLocalStorage() {
     tournament: {
       ...system.tournament,
       playedPairs: Array.from(system.tournament.playedPairs || [])
-    }
+    },
+    currentPlayoffBracket: (typeof currentPlayoffBracket !== 'undefined' ? currentPlayoffBracket : null)
   };
   localStorage.setItem('tournamentSystem', JSON.stringify(payload));
 }
@@ -517,6 +468,16 @@ function startTournament() {
   // Harmonogram stołów: start
   initTableScheduler();
   renderTablesPicker(); // zablokuje wybór stołów w trakcie
+
+  // Przywróć play-off, jeśli zapisany
+    if (data.currentPlayoffBracket) {
+      try {
+        if (typeof currentPlayoffBracket !== 'undefined') currentPlayoffBracket = data.currentPlayoffBracket;
+        if (typeof displayPlayoffBracket === 'function') displayPlayoffBracket(data.currentPlayoffBracket);
+      } catch (e) {
+        console.warn('Nie udało się przywrócić play-off:', e);
+      }
+    }
 
   updateTournamentView();
   updateRanking();
@@ -1134,11 +1095,6 @@ function handlePlayoffResults(playoffBracket) {
 
 // ===== Globalny stan play-off =====
 let currentPlayoffBracket = null;
-Object.defineProperty(window, 'currentPlayoffBracket', {
-  configurable: true,
-  get() { return currentPlayoffBracket; },
-  set(v) { currentPlayoffBracket = v; }
-});
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -1548,4 +1504,20 @@ function enablePlayoffEdit(roundKey, index) {
   meta.editing = true;
 
   displayPlayoffBracket(currentPlayoffBracket);
+}
+
+
+// --- Firebase/GH Pages: udostępnij currentPlayoffBracket na window (bez zmiany istniejącej logiki)
+try {
+  if (typeof currentPlayoffBracket !== 'undefined') {
+    Object.defineProperty(window, 'currentPlayoffBracket', {
+      get() { return currentPlayoffBracket; },
+      set(v) { currentPlayoffBracket = v; }
+    });
+  }
+  Object.defineProperty(window, 'system', {
+    get() { return system; }
+  });
+} catch (e) {
+  // ignore
 }
