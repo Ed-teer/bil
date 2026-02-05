@@ -139,6 +139,9 @@ function saveToLocalStorage() {
     currentPlayoffBracket: (typeof currentPlayoffBracket !== 'undefined' ? currentPlayoffBracket : null)
   };
   localStorage.setItem('tournamentSystem', JSON.stringify(payload));
+  localStorage.setItem('playoffBracket', JSON.stringify(currentPlayoffBracket));
+window.currentPlayoffBracket = currentPlayoffBracket;
+
 }
 
 function loadFromLocalStorage() {
@@ -179,6 +182,15 @@ function loadFromLocalStorage() {
       tables,
       tableScheduler: (t.tableScheduler && typeof t.tableScheduler === 'object') ? t.tableScheduler : { free: [], busy: {} }
     };
+    try {
+  const pb = localStorage.getItem('playoffBracket');
+  currentPlayoffBracket = pb ? JSON.parse(pb) : null;
+  window.currentPlayoffBracket = currentPlayoffBracket;
+} catch (e) {
+  currentPlayoffBracket = null;
+  window.currentPlayoffBracket = null;
+}
+
   } catch (e) {
     console.warn('Błąd wczytywania localStorage:', e);
   }
@@ -1095,6 +1107,7 @@ function handlePlayoffResults(playoffBracket) {
 
 // ===== Globalny stan play-off =====
 let currentPlayoffBracket = null;
+window.currentPlayoffBracket = null;
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', () => {
