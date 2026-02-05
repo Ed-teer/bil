@@ -101,6 +101,9 @@ onSnapshot(ref, (snap) => {
         window.currentPlayoffBracket = null;
       }
     }
+if (data.system === null) {
+  localStorage.removeItem("tournamentSystem");
+}
 
     // i przerysuj admina
     forceUiRefresh(50);
@@ -130,3 +133,12 @@ document.addEventListener("input", (e) => {
 // --- kluczowe: po starcie turnieju odśwież UI od razu
 document.getElementById("startTournamentBtn")?.addEventListener("click", () => forceUiRefresh(150));
 document.getElementById("resetTournamentBtn")?.addEventListener("click", () => forceUiRefresh(150));
+
+// --- Reset: po kliknięciu wymuś zapis nowego stanu do Firestore (żeby LIVE się odświeżył)
+document.getElementById("resetTournamentBtn")?.addEventListener("click", () => {
+  // Daj chwilę, żeby Twój skrypt dokończył reset i zapisał do localStorage
+  setTimeout(() => {
+    saveState();        // wyślij nowy stan do Firestore
+    forceUiRefresh(50); // przerysuj admina od razu (bez F5)
+  }, 350);
+});
