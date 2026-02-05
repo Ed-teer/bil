@@ -33,6 +33,56 @@ const system = {
     }
   }
 };
+// ===== Firebase/GitHub Pages sync helpers =====
+// Wystawiamy 'system' na window + robimy setter, który scala dane zamiast podmieniać referencję.
+// Dzięki temu kod, który używa stałej 'system', nadal działa, a zewnętrzne sync może robić: window.system = snapshot.
+(function bindSystemToWindow(){
+  const deepMerge = (target, src) => {
+    if (!src || typeof src !== 'object') return target;
+    for (const k of Object.keys(src)) {
+      const sv = src[k];
+      const tv = target[k];
+      if (Array.isArray(sv)) {
+        target[k] = sv.slice();
+      } else if (sv && typeof sv === 'object' && !(sv instanceof Date)) {
+        // Set traktujemy osobno
+        if (sv instanceof Set) {
+          target[k] = new Set(Array.from(sv));
+        } else if (tv && typeof tv === 'object' && !Array.isArray(tv) && !(tv instanceof Set)) {
+          deepMerge(tv, sv);
+        } else {
+          target[k] = deepMerge({}, sv);
+        }
+      } else {
+        target[k] = sv;
+      }
+    }
+    return target;
+  };
+
+  // początkowa ekspozycja
+  window.__SYSTEM_REF__ = system;
+
+  Object.defineProperty(window, 'system', {
+    configurable: true,
+    get() { return system; },
+    set(v) {
+      if (!v) return;
+      // specjalnie: playedPairs może przyjść jako tablica
+      if (v.tournament && Array.isArray(v.tournament.playedPairs)) {
+        v = {
+          ...v,
+          tournament: {
+            ...v.tournament,
+            playedPairs: new Set(v.tournament.playedPairs)
+          }
+        };
+      }
+      deepMerge(system, v);
+    }
+  });
+})();
+
 
 // Stały znacznik wolnego losu
 const BYE = 'bye';
@@ -1084,6 +1134,11 @@ function handlePlayoffResults(playoffBracket) {
 
 // ===== Globalny stan play-off =====
 let currentPlayoffBracket = null;
+Object.defineProperty(window, 'currentPlayoffBracket', {
+  configurable: true,
+  get() { return currentPlayoffBracket; },
+  set(v) { currentPlayoffBracket = v; }
+});
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', () => {
