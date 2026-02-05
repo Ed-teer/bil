@@ -31,15 +31,15 @@ function readPlayoffFromLS() {
 async function saveStateToFirestore() {
   if (applyingRemote) return;
 
-  const systemSnapshot = readSystemFromLS();
-  const playoffSnapshot = window.currentPlayoffBracket ?? readPlayoffFromLS() ?? null;
+  const systemJson = localStorage.getItem("tournamentSystem");   // <-- STRING
+  const playoffJson = localStorage.getItem("playoffBracket");    // <-- STRING (albo null)
 
-  // nie zapisujemy “pustego nic” jeśli v10 jeszcze nie zdążył nic utworzyć
-  if (!systemSnapshot) return;
+  // jeśli v10 jeszcze nic nie zapisał, nie wysyłaj
+  if (!systemJson) return;
 
   const payload = {
-    system: systemSnapshot,
-    currentPlayoffBracket: playoffSnapshot ? JSON.stringify(playoffSnapshot) : null,
+    systemJson,
+    playoffJson: playoffJson || null,
     updatedAt: serverTimestamp(),
   };
 
@@ -49,6 +49,7 @@ async function saveStateToFirestore() {
     console.error("Firestore save error:", e);
   }
 }
+
 
 // 1) Hook: po każdym zapisie v10 -> dopychamy do Firestore
 function hookSaveFunction() {
@@ -102,9 +103,13 @@ onSnapshot(ref, (snap) => {
   applyingRemote = true;
   try {
     // NIE nadpisuj localStorage nullami, bo to “kasuje” UI/admina
-    if (data.system) {
-      localStorage.setItem("tournamentSystem", JSON.stringify(data.system));
-    }
+   if (data.systemJson) {
+  localStorage.setItem("tournamentSystem", data.systemJson);
+}
+if ("playoffJson" in data) {
+  if (data.playoffJson) localStorage.setItem("playoffBracket", data.playoffJson);
+  else localStorage.removeItem("playoffBracket");
+}
 
     if ("currentPlayoffBracket" in data) {
       window.currentPlayoffBracket = data.currentPlayoffBracket ?? null;
@@ -161,3 +166,4 @@ document.addEventListener("click", (e) => {
 document.addEventListener("input", () => {
   scheduleSave(900);
 });
+
