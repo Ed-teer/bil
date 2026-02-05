@@ -1,4 +1,7 @@
 // admin_app.js (ESM) – Firestore sync BEZ logowania (public write)
+// Źródłem prawdy jest localStorage "tournamentSystem" (tak jak w Twoim v10).
+// My tylko syncujemy to z Firestore i wymuszamy refresh UI po resetach/startach.
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig, TOURNAMENT_ID } from "./firebase-config.js";
@@ -9,58 +12,40 @@ const ref = doc(db, "tournaments", TOURNAMENT_ID);
 
 let applyingRemote = false;
 
-// --- zapis stanu (najbezpieczniej: bierzemy snapshot z localStorage, bo v10 trzyma "system" lokalnie)
-function readSystemFromLocalStorage() {
+function readSystemFromLS() {
   try {
     const raw = localStorage.getItem("tournamentSystem");
     return raw ? JSON.parse(raw) : null;
   } catch (e) {
-    console.error("Nie mogę odczytać tournamentSystem z localStorage:", e);
+    console.error("LS read tournamentSystem error:", e);
     return null;
   }
 }
 
-function readPlayoffFromLocalStorage() {
-  try {
-    const raw = localStorage.getItem("playoffBracket");
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
+function writeSystemToLS(systemObj) {
+  if (systemObj == null) {
+    localStorage.removeItem("tournamentSystem");
+    return;
   }
+  localStorage.setItem("tournamentSystem", JSON.stringify(systemObj));
 }
 
-async function saveState() {
-  if (applyingRemote) return;
-
-  const systemSnapshot = readSystemFromLocalStorage();
-  const playoffSnapshot =
-    (typeof window.currentPlayoffBracket !== "undefined" && window.currentPlayoffBracket) ||
-    readPlayoffFromLocalStorage() ||
-    null;
-
-  // jeśli jeszcze nic nie ma w localStorage (np. przed pierwszym zapisem), nie wysyłaj nulli
-
-
-  const payload = {
-    system: systemSnapshot,
-    currentPlayoffBracket: playoffSnapshot,
-    updatedAt: serverTimestamp(),
-  };
-
-  try {
-    await setDoc(ref, payload, { merge: true });
-  } catch (e) {
-    console.error("Błąd zapisu do Firestore:", e);
-  }
-}
-
-// --- odśwież UI admina na żądanie (rozwiązuje „mecze dopiero po F5”)
-function forceUiRefresh(delay = 120) {
+function forceUiRefresh(delay = 60) {
   setTimeout(() => {
     try {
+      // Najważniejsze: w v10 logika siedzi w pamięci skryptu,
+      // więc musimy przeładować stan z LS do "system" przez oryginalny loadFromLocalStorage().
+      if (typeof window.__originalLoadFromLocalStorage === "function") {
+        window.__originalLoadFromLocalStorage();
+      } else if (typeof window.loadFromLocalStorage === "function") {
+        // fallback (jeśli nie udało się podmienić)
+        window.loadFromLocalStorage();
+      }
+
+      // i dopiero potem render
+      if (typeof window.renderPlayers === "function") window.renderPlayers();
       if (typeof window.updateTournamentView === "function") window.updateTournamentView();
       if (typeof window.updateRanking === "function") window.updateRanking();
-      if (typeof window.renderPlayers === "function") window.renderPlayers();
       if (typeof window.displayPlayoffBracket === "function" && window.currentPlayoffBracket) {
         window.displayPlayoffBracket(window.currentPlayoffBracket);
       }
@@ -70,75 +55,109 @@ function forceUiRefresh(delay = 120) {
   }, delay);
 }
 
-// --- podmień localStorage save w Twoim skrypcie na Firestore save
-// Uwaga: Twój script_with_tables_v10.js woła saveToLocalStorage() – przechwytujemy to tutaj.
-window.saveToLocalStorage = function () {
-  // najpierw pozwól Twojemu kodowi zapisać do localStorage, potem wyślij do Firestore
-  // (tu tylko „dosyłamy” do Firestore)
-  saveState();
-};
+async function saveStateToFirestore() {
+  if (applyingRemote) return;
 
-// loadFromLocalStorage niech nic nie robi – stan przyjdzie z Firestore
-window.loadFromLocalStorage = function () {};
+  const systemSnapshot = readSystemFromLS();
 
-// --- realtime: z Firestore -> localStorage -> UI
+  // Reset ma prawo wyczyścić stan – wtedy wysyłamy null (żeby LIVE się wyczyścił)
+  const payload = {
+    system: systemSnapshot ?? null,
+    currentPlayoffBracket: window.currentPlayoffBracket ?? null,
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    await setDoc(ref, payload, { merge: true });
+  } catch (e) {
+    console.error("Firestore save error:", e);
+  }
+}
+
+/**
+ * 1) Zapnij się do istniejących funkcji v10:
+ * - v10 ma saveToLocalStorage() i loadFromLocalStorage()
+ * My je owijamy, nie zastępujemy logiki.
+ */
+(function hookOriginalFunctions() {
+  const origSave = window.saveToLocalStorage;
+  const origLoad = window.loadFromLocalStorage;
+
+  // zapamiętaj oryginały pod stałą nazwą (używamy w forceUiRefresh)
+  if (typeof origLoad === "function") window.__originalLoadFromLocalStorage = origLoad;
+
+  if (typeof origSave === "function") {
+    window.saveToLocalStorage = function () {
+      // najpierw niech v10 zapisze do localStorage
+      origSave();
+      // potem wypchnij snapshot do Firestore
+      saveStateToFirestore();
+    };
+  } else {
+    // fallback: jeśli z jakiegoś powodu nie ma oryginału
+    window.saveToLocalStorage = function () {
+      saveStateToFirestore();
+    };
+  }
+
+  // NIE blokujemy loadFromLocalStorage – v10 musi móc wczytać stan z LS
+  // (to właśnie usuwa potrzebę F5 po resecie)
+  if (typeof origLoad === "function") {
+    window.loadFromLocalStorage = function () {
+      origLoad();
+    };
+  }
+})();
+
+/**
+ * 2) Real-time: Firestore -> localStorage -> odśwież UI
+ */
 onSnapshot(ref, (snap) => {
   const data = snap.data();
   if (!data) return;
 
   applyingRemote = true;
   try {
-    // Wstrzyknij do localStorage, bo v10 korzysta z localStorage jako źródła prawdy
-    if (data.system) {
-      localStorage.setItem("tournamentSystem", JSON.stringify(data.system));
-    }
-    if ("currentPlayoffBracket" in data) {
-      if (data.currentPlayoffBracket) {
-        localStorage.setItem("playoffBracket", JSON.stringify(data.currentPlayoffBracket));
-        window.currentPlayoffBracket = data.currentPlayoffBracket;
-      } else {
-        localStorage.removeItem("playoffBracket");
-        window.currentPlayoffBracket = null;
-      }
-    }
-if (data.system === null) {
-  localStorage.removeItem("tournamentSystem");
-}
+    // kluczowe: zapis do localStorage, bo v10 czyta tylko stamtąd
+    writeSystemToLS("system" in data ? data.system : null);
 
-    // i przerysuj admina
-    forceUiRefresh(50);
+    if ("currentPlayoffBracket" in data) {
+      window.currentPlayoffBracket = data.currentPlayoffBracket ?? null;
+    }
+
+    forceUiRefresh(30);
   } finally {
     applyingRemote = false;
   }
 });
 
-// --- auto-zapis po klikach i inputach
+/**
+ * 3) Wymuszenia po kliknięciach (start/reset) – bez F5
+ */
+document.getElementById("startTournamentBtn")?.addEventListener("click", () => {
+  // daj v10 czas wygenerować mecze i zapisać LS
+  setTimeout(() => {
+    saveStateToFirestore();
+    forceUiRefresh(50);
+  }, 200);
+});
+
+document.getElementById("resetTournamentBtn")?.addEventListener("click", () => {
+  // daj v10 czas wyczyścić LS / stan
+  setTimeout(() => {
+    saveStateToFirestore();  // to jest to, co „budzi” LIVE po resecie
+    forceUiRefresh(50);      // i to usuwa konieczność F5 w adminie
+  }, 350);
+});
+
+// Dodatkowo: po każdej interakcji próbujemy dopchnąć zapis
 document.addEventListener("click", (e) => {
   const t = e.target;
   if (!t) return;
-  if (t.tagName === "BUTTON" || t.closest("button")) {
-    // po kliknięciach daj chwilę, żeby Twój skrypt zdążył zapisać do localStorage
-    setTimeout(saveState, 120);
-  }
+  if (t.tagName === "BUTTON" || t.closest("button")) setTimeout(saveStateToFirestore, 250);
 });
-
 document.addEventListener("input", (e) => {
   const t = e.target;
   if (!t) return;
-  if (t.matches("input") || t.matches("select") || t.matches("textarea")) {
-    setTimeout(saveState, 250);
-  }
-});
-
-// --- kluczowe: po starcie turnieju odśwież UI od razu
-document.getElementById("startTournamentBtn")?.addEventListener("click", () => forceUiRefresh(150));
-document.getElementById("resetTournamentBtn")?.addEventListener("click", () => forceUiRefresh(150));
-
-// --- Reset: po kliknięciu wymuś zapis nowego stanu do Firestore (żeby LIVE się odświeżył)
-document.getElementById("resetTournamentBtn")?.addEventListener("click", () => {
-  // Daj chwilę, żeby Twój skrypt dokończył reset i zapisał do localStorage
-  setTimeout(() => {
-    saveState();        // wyślij nowy stan do Firestore
-    forceUiRefresh(50); // przerysuj admina od razu (bez F5)
-  }, 350);
+  if (t.matches("input") || t.matches("select") || t.matches("textarea")) setTimeout(saveStateToFirestore, 350);
 });
