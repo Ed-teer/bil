@@ -131,13 +131,33 @@ onSnapshot(ref, (snap) => {
 });
 
 // 4) Dodatkowy “ratunek”: po klikach/inputach dopychamy zapis (gdyby v10 nie zawołał saveToLocalStorage)
+// --- THROTTLED SAVE (ochrona quota Firestore) ---
+let saveTimer = null;
+let lastSentHash = "";
+
+function scheduleSave(delay = 800) {
+  if (saveTimer) clearTimeout(saveTimer);
+
+  saveTimer = setTimeout(async () => {
+    const systemSnapshot = readSystemFromLS();
+    if (!systemSnapshot) return;
+
+    const currentHash = JSON.stringify(systemSnapshot);
+    if (currentHash === lastSentHash) return; // brak zmian → brak zapisu
+    lastSentHash = currentHash;
+
+    await saveStateToFirestore();
+  }, delay);
+}
+
+// zamiast zapisywać za każdym razem → tylko planujemy zapis
 document.addEventListener("click", (e) => {
   const t = e.target;
-  if (!t) return;
-  if (t.tagName === "BUTTON" || t.closest("button")) setTimeout(saveStateToFirestore, 250);
+  if (t && (t.tagName === "BUTTON" || t.closest("button"))) {
+    scheduleSave(600);
+  }
 });
-document.addEventListener("input", (e) => {
-  const t = e.target;
-  if (!t) return;
-  if (t.matches("input") || t.matches("select") || t.matches("textarea")) setTimeout(saveStateToFirestore, 350);
+
+document.addEventListener("input", () => {
+  scheduleSave(900);
 });
