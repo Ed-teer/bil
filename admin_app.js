@@ -1,4 +1,6 @@
-// admin_app.js (ESM) – zapis do Firestore bez logowania (public write)
+// admin_app.js (ESM) – Firebase sync BEZ logowania (public write)
+// Uwaga: ten tryb jest niezabezpieczony (każdy znający link może pisać do bazy, jeśli rules na to pozwalają)
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig, TOURNAMENT_ID } from "./firebase-config.js";
@@ -9,65 +11,48 @@ const ref = doc(db, "tournaments", TOURNAMENT_ID);
 
 let applyingRemote = false;
 
-function buildSerializableSystem(sys){
-  if (!sys) return null;
-  const t = sys.tournament || {};
-  return {
-    playerPool: Array.isArray(sys.playerPool) ? sys.playerPool : [],
-    tournament: {
-      ...t,
-      playedPairs: Array.from(t.playedPairs || [])
-    }
-  };
-}
-
-async function saveState() {
+// zapisuj to samo, co idzie do localStorage (to jest jedyny pewny snapshot stanu)
+async function saveStateFromLocalStorage() {
   if (applyingRemote) return;
 
-  const payload = {
-    system: buildSerializableSystem(window.system),
-    currentPlayoffBracket: (typeof window.currentPlayoffBracket !== "undefined" ? window.currentPlayoffBracket : null),
-    updatedAt: serverTimestamp()
-  };
+  const raw = localStorage.getItem("tournamentSystem");
+  if (!raw) return;
+
+  let parsed = null;
+  try { parsed = JSON.parse(raw); } catch { return; }
 
   try {
-    await setDoc(ref, payload, { merge: true });
+    await setDoc(ref, { system: parsed, updatedAt: serverTimestamp() }, { merge: true });
   } catch (e) {
-    console.error("Błąd zapisu do Firestore:", e);
+    console.error("Firestore save error:", e);
   }
 }
 
-// Podmień localStorage na Firestore
-window.saveToLocalStorage = function () { saveState(); };
-window.loadFromLocalStorage = function () { /* stan przyjdzie z onSnapshot */ };
+// Podmień saveToLocalStorage tak, żeby dalej działał lokalny zapis + dopiero potem Firestore
+const originalSave = window.saveToLocalStorage;
+window.saveToLocalStorage = function () {
+  try { if (typeof originalSave === "function") originalSave(); } finally {
+    saveStateFromLocalStorage();
+  }
+};
 
+// Remote -> local: wstrzyknij do localStorage i odpal oryginalny loader (on zaktualizuje UI)
+const originalLoad = window.loadFromLocalStorage;
 onSnapshot(ref, (snap) => {
   const data = snap.data();
-  if (!data) return;
+  if (!data || !data.system) return;
 
   applyingRemote = true;
   try {
-    // dzięki setterowi w skrypcie v10 FIXED: window.system = ... scala w stały obiekt 'system'
-    if (data.system) window.system = data.system;
-    if ("currentPlayoffBracket" in data) window.currentPlayoffBracket = data.currentPlayoffBracket;
-
-    if (typeof window.renderPlayers === "function") window.renderPlayers();
-    if (typeof window.updateTournamentView === "function") window.updateTournamentView();
-    if (typeof window.updateRanking === "function") window.updateRanking();
-    if (typeof window.displayPlayoffBracket === "function" && window.currentPlayoffBracket) {
-      window.displayPlayoffBracket(window.currentPlayoffBracket);
-    }
+    localStorage.setItem("tournamentSystem", JSON.stringify(data.system));
+    if (typeof originalLoad === "function") originalLoad();
   } finally {
     applyingRemote = false;
   }
 });
 
-// Auto-zapis: kliknięcia i inputy
-document.addEventListener("click", (e) => {
-  const t = e.target;
-  if (t && (t.tagName === "BUTTON" || t.closest("button"))) setTimeout(saveState, 50);
-});
-document.addEventListener("input", (e) => {
-  const t = e.target;
-  if (t && (t.matches("input") || t.matches("select"))) setTimeout(saveState, 120);
-});
+// dodatkowo: po pierwszym wejściu, jeśli mamy już lokalny stan, wyślij go do Firestore
+setTimeout(() => {
+  // nie nadpisuj zdalnego, jeśli już istnieje (snapshot przyjdzie i tak)
+  saveStateFromLocalStorage();
+}, 500);
