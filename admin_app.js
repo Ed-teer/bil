@@ -39,7 +39,7 @@ async function saveState() {
     null;
 
   // jeśli jeszcze nic nie ma w localStorage (np. przed pierwszym zapisem), nie wysyłaj nulli
-  if (!systemSnapshot) return;
+
 
   const payload = {
     system: systemSnapshot,
