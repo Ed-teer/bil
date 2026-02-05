@@ -186,6 +186,7 @@ function loadFromLocalStorage() {
   const pb = localStorage.getItem('playoffBracket');
   currentPlayoffBracket = pb ? JSON.parse(pb) : null;
   window.currentPlayoffBracket = currentPlayoffBracket;
+      saveToLocalStorage();
 } catch (e) {
   currentPlayoffBracket = null;
   window.currentPlayoffBracket = null;
