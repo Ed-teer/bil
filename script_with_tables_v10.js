@@ -482,16 +482,6 @@ function startTournament() {
   initTableScheduler();
   renderTablesPicker(); // zablokuje wybór stołów w trakcie
 
-  // Przywróć play-off, jeśli zapisany
-    if (data.currentPlayoffBracket) {
-      try {
-        if (typeof currentPlayoffBracket !== 'undefined') currentPlayoffBracket = data.currentPlayoffBracket;
-        if (typeof displayPlayoffBracket === 'function') displayPlayoffBracket(data.currentPlayoffBracket);
-      } catch (e) {
-        console.warn('Nie udało się przywrócić play-off:', e);
-      }
-    }
-
   updateTournamentView();
   updateRanking();
   updateTournamentStatus();
