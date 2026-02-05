@@ -1,5 +1,5 @@
 // firebase-config.js
-// tylko konfiguracja + export (BEZ initializeApp)
+// Tylko konfiguracja + export. NIE importuj firebase/app i NIE wywołuj initializeApp tutaj.
 
 export const firebaseConfig = {
   apiKey: "AIzaSyAIgTkQSTCGqyS200Vy-5dwQbgiVK2XThc",
@@ -10,5 +10,4 @@ export const firebaseConfig = {
   appId: "1:919635473725:web:4980250d3eebee8f064154"
 };
 
-// jedno ID turnieju (stałe)
 export const TOURNAMENT_ID = "main";
