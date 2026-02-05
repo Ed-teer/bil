@@ -56,3 +56,22 @@ setTimeout(() => {
   // nie nadpisuj zdalnego, jeśli już istnieje (snapshot przyjdzie i tak)
   saveStateFromLocalStorage();
 }, 500);
+
+// Wymuś odświeżenie UI po starcie turnieju (czasem render nie odpala się od razu)
+function forceUiRefresh(delay = 120) {
+  setTimeout(() => {
+    try {
+      if (typeof window.updateTournamentView === "function") window.updateTournamentView();
+      if (typeof window.updateRanking === "function") window.updateRanking();
+      if (typeof window.renderPlayers === "function") window.renderPlayers();
+      if (typeof window.displayPlayoffBracket === "function" && window.currentPlayoffBracket) {
+        window.displayPlayoffBracket(window.currentPlayoffBracket);
+      }
+    } catch (e) {
+      console.error("forceUiRefresh error:", e);
+    }
+  }, delay);
+}
+
+document.getElementById("startTournamentBtn")?.addEventListener("click", () => forceUiRefresh(150));
+document.getElementById("resetTournamentBtn")?.addEventListener("click", () => forceUiRefresh(150));
