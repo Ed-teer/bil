@@ -7,14 +7,25 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const ref = doc(db, "tournaments", TOURNAMENT_ID);
 
-// --- 1) Firestore sync ---
 let applyingRemote = false;
+
+function buildSerializableSystem(sys){
+  if (!sys) return null;
+  const t = sys.tournament || {};
+  return {
+    playerPool: Array.isArray(sys.playerPool) ? sys.playerPool : [],
+    tournament: {
+      ...t,
+      playedPairs: Array.from(t.playedPairs || [])
+    }
+  };
+}
 
 async function saveState() {
   if (applyingRemote) return;
 
   const payload = {
-    system: window.system ?? null,
+    system: buildSerializableSystem(window.system),
     currentPlayoffBracket: (typeof window.currentPlayoffBracket !== "undefined" ? window.currentPlayoffBracket : null),
     updatedAt: serverTimestamp()
   };
@@ -36,10 +47,10 @@ onSnapshot(ref, (snap) => {
 
   applyingRemote = true;
   try {
+    // dzięki setterowi w skrypcie v10 FIXED: window.system = ... scala w stały obiekt 'system'
     if (data.system) window.system = data.system;
     if ("currentPlayoffBracket" in data) window.currentPlayoffBracket = data.currentPlayoffBracket;
 
-    // odśwież UI
     if (typeof window.renderPlayers === "function") window.renderPlayers();
     if (typeof window.updateTournamentView === "function") window.updateTournamentView();
     if (typeof window.updateRanking === "function") window.updateRanking();
@@ -51,16 +62,12 @@ onSnapshot(ref, (snap) => {
   }
 });
 
-// Auto-zapis: kliknięcia
+// Auto-zapis: kliknięcia i inputy
 document.addEventListener("click", (e) => {
   const t = e.target;
-  if (!t) return;
-  if (t.tagName === "BUTTON" || t.closest("button")) setTimeout(saveState, 50);
+  if (t && (t.tagName === "BUTTON" || t.closest("button"))) setTimeout(saveState, 50);
 });
-
-// Auto-zapis: inputy/selecty
 document.addEventListener("input", (e) => {
   const t = e.target;
-  if (!t) return;
-  if (t.matches("input") || t.matches("select")) setTimeout(saveState, 120);
+  if (t && (t.matches("input") || t.matches("select"))) setTimeout(saveState, 120);
 });
