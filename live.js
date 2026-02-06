@@ -160,13 +160,28 @@ function renderPlayoff(playoff){
 }
 
 onSnapshot(ref, (snap) => {
-  const data = snap.data();
-  if (!data) return;
-  let system = null;
-let playoff = null;
+const data = snap.data();
+if (!data) return;
 
-try { system = data.systemJson ? JSON.parse(data.systemJson) : null; } catch {}
-try { playoff = data.playoffJson ? JSON.parse(data.playoffJson) : null; } catch {}
+// --- SYSTEM: obsłuż oba formaty (system / systemJson) ---
+let system = null;
+try {
+  if (data.systemJson) system = JSON.parse(data.systemJson);
+  else system = data.system ?? null;
+} catch (e) {
+  system = data.system ?? null;
+}
+
+// --- PLAYOFF: obsłuż oba formaty (playoffJson / currentPlayoffBracket) ---
+let playoff = null;
+try {
+  if (data.playoffJson) playoff = JSON.parse(data.playoffJson);
+  else if (typeof data.currentPlayoffBracket === "string") playoff = JSON.parse(data.currentPlayoffBracket);
+  else playoff = data.currentPlayoffBracket ?? null;
+} catch (e) {
+  playoff = data.currentPlayoffBracket ?? null;
+}
+
 
   const system = data.system;
  let playoff = null;
