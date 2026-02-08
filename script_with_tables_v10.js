@@ -999,6 +999,17 @@ function displayPlayoffBracket(playoffBracket) {
     p2Score.classList.add('score-input');
     if (savedScores[p2Score.id] !== undefined) p2Score.value = savedScores[p2Score.id];
 
+  const onScoreChange = () => {
+  handlePlayoffResults(playoffBracket);
+  saveToLocalStorage(); // jeśli masz w projekcie
+};
+
+p1Score.addEventListener('input', onScoreChange);
+p2Score.addEventListener('input', onScoreChange);
+
+
+    
+
     div.appendChild(p1Name);
     div.appendChild(vs);
     div.appendChild(p2Name);
@@ -1045,20 +1056,30 @@ function handlePlayoffResults(playoffBracket) {
     return el ? (parseInt(el.value) || 0) : 0;
   };
 
-  const winScore = system.tournament.gameType;
+ // const winScore = system.tournament.gameType;
+  const winScore = parseInt(system?.tournament?.winScore ?? system?.tournament?.gameType ?? 3, 10);
 
-  const determineWinner = (idA, idB, playerA, playerB) => {
-    const scoreA = getScore(idA);
-    const scoreB = getScore(idB);
 
-    if (!playerA || playerA === BYE) return playerB;
-    if (!playerB || playerB === BYE) return playerA;
+ const determineWinner = (idA, idB, playerA, playerB) => {
+  const elA = document.getElementById(idA);
+  const elB = document.getElementById(idB);
 
-    if (scoreA === winScore) return playerA;
-    if (scoreB === winScore) return playerB;
+  const scoreA = elA && elA.value !== '' ? parseInt(elA.value, 10) : null;
+  const scoreB = elB && elB.value !== '' ? parseInt(elB.value, 10) : null;
 
-    return null;
-  };
+  if (!playerA || playerA === BYE) return playerB;
+  if (!playerB || playerB === BYE) return playerA;
+
+  // dopóki nie ma obu wyników – nie rozstrzygamy
+  if (scoreA === null || scoreB === null) return null;
+  if (scoreA === scoreB) return null;
+
+  if (scoreA >= winScore && scoreA > scoreB) return playerA;
+  if (scoreB >= winScore && scoreB > scoreA) return playerB;
+
+  return null;
+};
+
 
   // baraże -> ćwierćfinały
   playoffBracket.roundOf12.forEach((match, i) => {
