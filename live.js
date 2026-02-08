@@ -200,77 +200,99 @@ function isRealPlayer(name) {
   const n = String(name).trim().toLowerCase();
   return n !== "???" && n !== "tbd" && n !== "bye" && n !== "null";
 }
-function isReadyMatch(p1, p2) {
-  return isRealPlayer(p1) && isRealPlayer(p2);
+
+function getPlayoffPlayers(playoff, rk, i) {
+  if (!playoff) return [null, null];
+
+  if (rk === "final") return [playoff.final?.[0] ?? null, playoff.final?.[1] ?? null];
+  if (rk === "thirdPlace") return [playoff.thirdPlace?.[0] ?? null, playoff.thirdPlace?.[1] ?? null];
+
+  const arr = playoff[rk];
+  if (!Array.isArray(arr) || !Array.isArray(arr[i])) return [null, null];
+  return [arr[i][0] ?? null, arr[i][1] ?? null];
 }
 
-// UWAGA: tu na razie nie mamy stołów z play-off (jeśli są gdzie indziej, dopniemy)
-function collectPlayoffReadyMatches(playoff) {
-  if (!playoff) return [];
-
-  const out = [];
-
-  const pushRound = (phase, arr) => {
-    if (!Array.isArray(arr)) return;
-    arr.forEach((m, i) => {
-      const p1 = m?.[0] ?? null;
-      const p2 = m?.[1] ?? null;
-      if (!isReadyMatch(p1, p2)) return;
-      out.push({ phase, index: i, p1, p2, table: m?.table ?? null, completed: !!m?.completed });
-    });
-  };
-
-  pushRound("Baraże", playoff.roundOf12);
-  pushRound("Ćwierćfinały", playoff.quarterfinals);
-  pushRound("Półfinały", playoff.semifinals);
-
-  if (Array.isArray(playoff.final) && playoff.final.length === 2) {
-    const [p1, p2] = playoff.final;
-    if (isReadyMatch(p1, p2)) out.push({ phase: "Finał", index: 0, p1, p2, table: playoff.final?.table ?? null, completed: !!playoff.final?.completed });
-  }
-  if (Array.isArray(playoff.thirdPlace) && playoff.thirdPlace.length === 2) {
-    const [p1, p2] = playoff.thirdPlace;
-    if (isReadyMatch(p1, p2)) out.push({ phase: "3. miejsce", index: 0, p1, p2, table: playoff.thirdPlace?.table ?? null, completed: !!playoff.thirdPlace?.completed });
-  }
-
-  return out.filter(m => !m.completed);
+// “Playable” na LIVE: para kompletna (nie ???/TBD/bye). To jest zgodne z Twoim wymaganiem.
+function livePlayoffIsPlayable(playoff, rk, i) {
+  const [p1, p2] = getPlayoffPlayers(playoff, rk, i);
+  return isRealPlayer(p1) && isRealPlayer(p2);
 }
 
 function renderPlayoffTablesAndQueue(playoff) {
   const elPoTables = document.getElementById("poTables");
-  const elPoQueue = document.getElementById("poQueue");
+  const elPoQueue  = document.getElementById("poQueue");
   if (!elPoTables || !elPoQueue) return;
 
-  const matches = collectPlayoffReadyMatches(playoff);
-
-  // jeśli nie masz jeszcze tabel w danych play-off, wszystko wyląduje w "oczekujących"
-  const playing = matches.filter(m => m.table != null);
-  const waiting = matches.filter(m => m.table == null);
-
   elPoTables.innerHTML = "";
+  elPoQueue.innerHTML = "";
+
+  if (!playoff || !playoff._meta || !playoff._meta.matches) {
+    elPoTables.innerHTML = "<div class='muted'>Play-off nie jest uruchomione.</div>";
+    elPoQueue.innerHTML  = "<div class='muted'>Play-off nie jest uruchomione.</div>";
+    return;
+  }
+
+  const order = [
+    ["roundOf12", 4, "Baraże"],
+    ["quarterfinals", 4, "Ćwierćfinały"],
+    ["semifinals", 2, "Półfinały"],
+    ["final", 1, "Finał"],
+    ["thirdPlace", 1, "3. miejsce"],
+  ];
+
+  const playing = [];
+  const waiting = [];
+
+  for (const [rk, count, label] of order) {
+    for (let i = 0; i < count; i++) {
+      const key = `${rk}_${i}`;
+      const meta = playoff._meta.matches[key];
+      if (!meta) continue;
+      if (meta.completed) continue;
+
+      // pokaż tylko mecze “gotowe” (para skompletowana)
+      if (!livePlayoffIsPlayable(playoff, rk, i)) continue;
+
+      const [p1, p2] = getPlayoffPlayers(playoff, rk, i);
+
+      const item = {
+        key, rk, i, label,
+        p1, p2,
+        table: meta.table ?? null
+      };
+
+      if (item.table != null) playing.push(item);
+      else waiting.push(item);
+    }
+  }
+
   if (playing.length === 0) {
     elPoTables.innerHTML = "<div class='muted'>Brak grających meczów play-off.</div>";
   } else {
+    // sortuj po numerze stołu
+    playing.sort((a,b) => (a.table ?? 999) - (b.table ?? 999));
     playing.forEach(m => {
-      const div = document.createElement("div");
-      div.className = "tableRow";
-      div.innerHTML = `<b>Stół ${m.table}:</b> ${m.p1} vs ${m.p2} <span class="muted">(${m.phase})</span>`;
-      elPoTables.appendChild(div);
+      const row = document.createElement("div");
+      row.className = "tableRow";
+      row.innerHTML = `<b>Stół ${m.table}:</b> ${m.p1} vs ${m.p2} <span class="muted">(${m.label})</span>`;
+      elPoTables.appendChild(row);
     });
   }
 
-  elPoQueue.innerHTML = "";
   if (waiting.length === 0) {
     elPoQueue.innerHTML = "<div class='muted'>Brak oczekujących meczów play-off.</div>";
   } else {
+    // sortuj wg fazy, potem indeksu
+    waiting.sort((a,b) => a.key.localeCompare(b.key));
     waiting.forEach(m => {
-      const div = document.createElement("div");
-      div.className = "queueRow";
-      div.innerHTML = `${m.p1} vs ${m.p2} <span class="muted">(${m.phase})</span>`;
-      elPoQueue.appendChild(div);
+      const row = document.createElement("div");
+      row.className = "queueRow";
+      row.innerHTML = `${m.p1} vs ${m.p2} <span class="muted">(${m.label})</span>`;
+      elPoQueue.appendChild(row);
     });
   }
 }
+
 
 
 
