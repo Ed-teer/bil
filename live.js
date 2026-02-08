@@ -221,6 +221,9 @@ function livePlayoffIsPlayable(playoff, rk, i) {
 }
 
 function renderPlayoffTablesAndQueue(playoff) {
+console.log("poTables?", !!document.getElementById("poTables"), "poQueue?", !!document.getElementById("poQueue"));
+
+  
   const elPoTables = document.getElementById("poTables");
   const elPoQueue  = document.getElementById("poQueue");
   if (!elPoTables || !elPoQueue) return;
