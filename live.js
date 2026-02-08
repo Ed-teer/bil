@@ -190,7 +190,6 @@ try {
   renderTables(system, playoff);
   renderQueue(system);
   renderRanking(system);
-  renderPlayoff(playoff);
   renderPlayoffTablesAndQueue(playoff);
 
 });
