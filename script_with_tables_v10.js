@@ -1001,9 +1001,7 @@ function displayPlayoffBracket(playoffBracket) {
 
 const onScoreChange = () => {
   handlePlayoffResults(playoffBracket);
-  if (typeof saveToLocalStorage === "function") {
-    saveToLocalStorage();
-  }
+  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
 };
 
 p1Score.addEventListener('input', onScoreChange);
@@ -1059,7 +1057,8 @@ function handlePlayoffResults(playoffBracket) {
   };
 
  // const winScore = system.tournament.gameType;
-  const winScore = parseInt(system?.tournament?.winScore ?? system?.tournament?.gameType ?? 3, 10);
+  let winScore = parseInt(system?.tournament?.winScore ?? system?.tournament?.gameType ?? 3, 10);
+if (!Number.isFinite(winScore) || winScore <= 0) winScore = 3;
 
 
  const determineWinner = (idA, idB, playerA, playerB) => {
