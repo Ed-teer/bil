@@ -139,9 +139,6 @@ function saveToLocalStorage() {
     currentPlayoffBracket: (typeof currentPlayoffBracket !== 'undefined' ? currentPlayoffBracket : null)
   };
   localStorage.setItem('tournamentSystem', JSON.stringify(payload));
-  localStorage.setItem('playoffBracket', JSON.stringify(currentPlayoffBracket));
-window.currentPlayoffBracket = currentPlayoffBracket;
-
 }
 
 function loadFromLocalStorage() {
@@ -182,16 +179,6 @@ function loadFromLocalStorage() {
       tables,
       tableScheduler: (t.tableScheduler && typeof t.tableScheduler === 'object') ? t.tableScheduler : { free: [], busy: {} }
     };
-    try {
-  const pb = localStorage.getItem('playoffBracket');
-  currentPlayoffBracket = pb ? JSON.parse(pb) : null;
-  window.currentPlayoffBracket = currentPlayoffBracket;
-      saveToLocalStorage();
-} catch (e) {
-  currentPlayoffBracket = null;
-  window.currentPlayoffBracket = null;
-}
-
   } catch (e) {
     console.warn('Błąd wczytywania localStorage:', e);
   }
@@ -481,6 +468,16 @@ function startTournament() {
   // Harmonogram stołów: start
   initTableScheduler();
   renderTablesPicker(); // zablokuje wybór stołów w trakcie
+
+  // Przywróć play-off, jeśli zapisany
+    if (data.currentPlayoffBracket) {
+      try {
+        if (typeof currentPlayoffBracket !== 'undefined') currentPlayoffBracket = data.currentPlayoffBracket;
+        if (typeof displayPlayoffBracket === 'function') displayPlayoffBracket(data.currentPlayoffBracket);
+      } catch (e) {
+        console.warn('Nie udało się przywrócić play-off:', e);
+      }
+    }
 
   updateTournamentView();
   updateRanking();
@@ -940,8 +937,7 @@ function generatePlayoffBracket() {
     final: [null, null],
     thirdPlace: [null, null]
   };
-bracket._scores = bracket._scores || {};
-  
+
   const playInPairs = [
     [4, 11], // 5 vs 12 -> ćw 1
     [5, 10], // 6 vs 11 -> ćw 3
@@ -1000,28 +996,6 @@ function displayPlayoffBracket(playoffBracket) {
     p2Score.classList.add('score-input');
     if (savedScores[p2Score.id] !== undefined) p2Score.value = savedScores[p2Score.id];
 
-  
-
-const keyA = `${roundKey}_${index}_a`;
-const keyB = `${roundKey}_${index}_b`;
-
-p1Score.value = (playoffBracket._scores[keyA] ?? p1Score.value ?? "");
-p2Score.value = (playoffBracket._scores[keyB] ?? p2Score.value ?? "");
-
-const onScoreChange = () => {
-  playoffBracket._scores[keyA] = p1Score.value;
-  playoffBracket._scores[keyB] = p2Score.value;
-
-  handlePlayoffResults(playoffBracket);
-  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
-};
-
-p1Score.addEventListener("input", onScoreChange);
-p2Score.addEventListener("input", onScoreChange);
-
-
-    
-
     div.appendChild(p1Name);
     div.appendChild(vs);
     div.appendChild(p2Name);
@@ -1068,31 +1042,20 @@ function handlePlayoffResults(playoffBracket) {
     return el ? (parseInt(el.value) || 0) : 0;
   };
 
- // const winScore = system.tournament.gameType;
-  let winScore = parseInt(system?.tournament?.winScore ?? system?.tournament?.gameType ?? 3, 10);
-if (!Number.isFinite(winScore) || winScore <= 0) winScore = 3;
+  const winScore = system.tournament.gameType;
 
+  const determineWinner = (idA, idB, playerA, playerB) => {
+    const scoreA = getScore(idA);
+    const scoreB = getScore(idB);
 
- const determineWinner = (idA, idB, playerA, playerB) => {
-  const elA = document.getElementById(idA);
-  const elB = document.getElementById(idB);
+    if (!playerA || playerA === BYE) return playerB;
+    if (!playerB || playerB === BYE) return playerA;
 
-  const scoreA = elA && elA.value !== '' ? parseInt(elA.value, 10) : null;
-  const scoreB = elB && elB.value !== '' ? parseInt(elB.value, 10) : null;
+    if (scoreA === winScore) return playerA;
+    if (scoreB === winScore) return playerB;
 
-  if (!playerA || playerA === BYE) return playerB;
-  if (!playerB || playerB === BYE) return playerA;
-
-  // dopóki nie ma obu wyników – nie rozstrzygamy
-  if (scoreA === null || scoreB === null) return null;
-  if (scoreA === scoreB) return null;
-
-  if (scoreA >= winScore && scoreA > scoreB) return playerA;
-  if (scoreB >= winScore && scoreB > scoreA) return playerB;
-
-  return null;
-};
-
+    return null;
+  };
 
   // baraże -> ćwierćfinały
   playoffBracket.roundOf12.forEach((match, i) => {
@@ -1132,7 +1095,6 @@ if (!Number.isFinite(winScore) || winScore <= 0) winScore = 3;
 
 // ===== Globalny stan play-off =====
 let currentPlayoffBracket = null;
-window.currentPlayoffBracket = null;
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -1171,8 +1133,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('generatePlayoffBtn')?.addEventListener('click', () => {
     currentPlayoffBracket = generatePlayoffBracket();
-    window.currentPlayoffBracket = currentPlayoffBracket;
-saveToLocalStorage();
     if (currentPlayoffBracket) {
       initPlayoffScheduler(currentPlayoffBracket);
       displayPlayoffBracket(currentPlayoffBracket);
