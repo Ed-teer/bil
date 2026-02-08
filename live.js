@@ -106,6 +106,34 @@ function renderTables(system, playoff){
   });
 }
 
+function renderQueue(system, playoff){
+  const all = system?.tournament?.allMatches || [];
+  const waiting = all
+    .filter(m => m && !m.completed && !m.isBye && m.table == null)
+    .sort((a,b) => (a.globalIndex ?? 0) - (b.globalIndex ?? 0))
+    .slice(0, 10);
+
+  elQueue.innerHTML = "";
+  if (waiting.length === 0) { elQueue.innerHTML = "<div>Brak oczekujących meczów.</div>"; return; }
+
+  waiting.forEach(m => {
+    const div = document.createElement("div");
+    div.className = "queueItem";
+    div.innerHTML = `<div class="left">${m.player1} vs ${m.player2}</div><div class="right">Runda ${m.round ?? "?"}</div>`;
+    elQueue.appendChild(div);
+  });
+  const poWaiting = collectPlayoffPlayingAndWaiting(playoff).waiting;
+
+// dopnij do kolejki
+poWaiting.forEach(m => {
+  const div = document.createElement("div");
+  div.className = "queueItem";
+  div.innerHTML = `<div class="left">${m.p1} vs ${m.p2}</div><div class="right">PO: ${m.label}</div>`;
+  elQueue.appendChild(div); // <- elQueue to Twój kontener #queue
+});
+
+}
+
 
 function renderRanking(system){
   const players = system?.tournament?.players || [];
@@ -194,7 +222,7 @@ try {
   system = data.system ?? null;
 }
 
-// --- PLAYOFF: obsłuż oba formaty (playoffJson / currentPlayoffBracket) ---
+// --- PLAYOFF: obsłuż oba formaty (playoffJson / currentPlayoffBracket) --
 let playoff = null;
 try {
   if (data.playoffJson) playoff = JSON.parse(data.playoffJson);
@@ -210,7 +238,7 @@ try {
   elLast.textContent = ts ? `Ostatnia aktualizacja: ${fmtDate(ts)}` : "Połączono";
 
   renderTables(system, playoff);
-  renderQueue(system);
+  renderQueue(system, playoff);
   renderRanking(system);
   const po = collectPlayoffPlayingAndWaiting(playoff).playing;
 
