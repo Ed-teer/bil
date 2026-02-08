@@ -999,9 +999,11 @@ function displayPlayoffBracket(playoffBracket) {
     p2Score.classList.add('score-input');
     if (savedScores[p2Score.id] !== undefined) p2Score.value = savedScores[p2Score.id];
 
-  const onScoreChange = () => {
+const onScoreChange = () => {
   handlePlayoffResults(playoffBracket);
-  saveToLocalStorage(); // jeśli masz w projekcie
+  if (typeof saveToLocalStorage === "function") {
+    saveToLocalStorage();
+  }
 };
 
 p1Score.addEventListener('input', onScoreChange);
