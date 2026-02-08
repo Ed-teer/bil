@@ -106,33 +106,84 @@ function renderTables(system, playoff){
   });
 }
 
-function renderQueue(system, playoff){
-  const all = system?.tournament?.allMatches || [];
-  const waiting = all
-    .filter(m => m && !m.completed && !m.isBye && m.table == null)
-    .sort((a,b) => (a.globalIndex ?? 0) - (b.globalIndex ?? 0))
-    .slice(0, 10);
-
+function renderQueue(system, playoff) {
+  const elQueue = document.getElementById("queue");
+  if (!elQueue) return;
   elQueue.innerHTML = "";
-  if (waiting.length === 0) { elQueue.innerHTML = "<div>Brak oczekujących meczów.</div>"; return; }
 
-  waiting.forEach(m => {
-    const div = document.createElement("div");
-    div.className = "queueItem";
-    div.innerHTML = `<div class="left">${m.player1} vs ${m.player2}</div><div class="right">Runda ${m.round ?? "?"}</div>`;
-    elQueue.appendChild(div);
+  const items = [];
+
+  // --- Liga: oczekujące = bez stołu, nie completed, nie bye
+  const all = system?.tournament?.allMatches || [];
+  all.forEach((m, idx) => {
+    if (!m || m.completed || m.isBye) return;
+    if (m.table != null) return; // oczekujące = bez stołu
+    items.push({
+      sort: `A_${String(m.round ?? 99).padStart(2,"0")}_${String(idx).padStart(4,"0")}`,
+      label: `${m.player1} vs ${m.player2}`,
+      meta: `Liga • runda ${m.round ?? "?"}`
+    });
   });
-  const poWaiting = collectPlayoffPlayingAndWaiting(playoff).waiting;
 
-// dopnij do kolejki
-poWaiting.forEach(m => {
-  const div = document.createElement("div");
-  div.className = "queueItem";
-  div.innerHTML = `<div class="left">${m.p1} vs ${m.p2}</div><div class="right">PO: ${m.label}</div>`;
-  elQueue.appendChild(div); // <- elQueue to Twój kontener #queue
-});
+  // --- Play-off: oczekujące = playable, bez stołu, nie completed
+  if (playoff?._meta?.matches) {
+    const order = [
+      ["roundOf12", 4, "Play-off • Baraże"],
+      ["quarterfinals", 4, "Play-off • Ćwierćfinały"],
+      ["semifinals", 2, "Play-off • Półfinały"],
+      ["final", 1, "Play-off • Finał"],
+      ["thirdPlace", 1, "Play-off • 3. miejsce"],
+    ];
 
+    const getPlayers = (rk, i) => {
+      if (rk === "final") return [playoff.final?.[0], playoff.final?.[1]];
+      if (rk === "thirdPlace") return [playoff.thirdPlace?.[0], playoff.thirdPlace?.[1]];
+      const arr = playoff[rk];
+      return Array.isArray(arr?.[i]) ? [arr[i][0], arr[i][1]] : [null, null];
+    };
+
+    const isReal = (n) => {
+      if (!n) return false;
+      const s = String(n).trim().toLowerCase();
+      return s !== "???" && s !== "tbd" && s !== "bye" && s !== "null";
+    };
+
+    for (const [rk, count, label] of order) {
+      for (let i = 0; i < count; i++) {
+        const key = `${rk}_${i}`;
+        const meta = playoff._meta.matches[key];
+        if (!meta) continue;
+        if (meta.completed) continue;
+        if (meta.table != null) continue; // oczekujące = bez stołu
+
+        const [p1, p2] = getPlayers(rk, i);
+        if (!isReal(p1) || !isReal(p2)) continue; // pokaż dopiero gdy para kompletna
+
+        items.push({
+          sort: `Z_${key}`, // po lidze
+          label: `${p1} vs ${p2}`,
+          meta: label
+        });
+      }
+    }
+  }
+
+  // sort i render
+  items.sort((a,b)=>a.sort.localeCompare(b.sort));
+
+  if (items.length === 0) {
+    elQueue.innerHTML = "<div>Brak oczekujących meczów.</div>";
+    return;
+  }
+
+  items.slice(0, 12).forEach(it => {
+    const row = document.createElement("div");
+    row.className = "queueItem";
+    row.innerHTML = `<div class="left">${it.label}</div><div class="right">${it.meta}</div>`;
+    elQueue.appendChild(row);
+  });
 }
+
 
 
 function renderRanking(system){
