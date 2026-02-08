@@ -193,7 +193,17 @@ try {
   renderTables(system, playoff);
   renderQueue(system);
   renderRanking(system);
-  renderPlayoffTablesAndQueue(playoff);
+  const po = collectPlayoffPlayingAndWaiting(playoff).playing;
+
+// Dopnij play-off do tych samych “grających stołów”
+po.forEach(m => {
+  const row = document.createElement("div");
+  row.className = "tableRow";
+  row.innerHTML = `<b>Stół ${m.table}:</b> ${m.p1} vs ${m.p2} <span class="muted">(PO: ${m.label})</span>`;
+  elTables.appendChild(row); // <- tu użyj zmiennej kontenera stołów z Twojej funkcji
+});
+
+
 
 });
 
@@ -220,21 +230,9 @@ function livePlayoffIsPlayable(playoff, rk, i) {
   return isRealPlayer(p1) && isRealPlayer(p2);
 }
 
-function renderPlayoffTablesAndQueue(playoff) {
-console.log("poTables?", !!document.getElementById("poTables"), "poQueue?", !!document.getElementById("poQueue"));
-
-  
-  const elPoTables = document.getElementById("poTables");
-  const elPoQueue  = document.getElementById("poQueue");
-  if (!elPoTables || !elPoQueue) return;
-
-  elPoTables.innerHTML = "";
-  elPoQueue.innerHTML = "";
-
+function collectPlayoffPlayingAndWaiting(playoff) {
   if (!playoff || !playoff._meta || !playoff._meta.matches) {
-    elPoTables.innerHTML = "<div class='muted'>Play-off nie jest uruchomione.</div>";
-    elPoQueue.innerHTML  = "<div class='muted'>Play-off nie jest uruchomione.</div>";
-    return;
+    return { playing: [], waiting: [] };
   }
 
   const order = [
@@ -255,13 +253,14 @@ console.log("poTables?", !!document.getElementById("poTables"), "poQueue?", !!do
       if (!meta) continue;
       if (meta.completed) continue;
 
-      // pokaż tylko mecze “gotowe” (para skompletowana)
+      // tylko mecze gotowe (para skompletowana)
       if (!livePlayoffIsPlayable(playoff, rk, i)) continue;
 
       const [p1, p2] = getPlayoffPlayers(playoff, rk, i);
 
       const item = {
-        key, rk, i, label,
+        key, rk, i,
+        label,
         p1, p2,
         table: meta.table ?? null
       };
@@ -271,32 +270,12 @@ console.log("poTables?", !!document.getElementById("poTables"), "poQueue?", !!do
     }
   }
 
-  if (playing.length === 0) {
-    elPoTables.innerHTML = "<div class='muted'>Brak grających meczów play-off.</div>";
-  } else {
-    // sortuj po numerze stołu
-    playing.sort((a,b) => (a.table ?? 999) - (b.table ?? 999));
-    playing.forEach(m => {
-      const row = document.createElement("div");
-      row.className = "tableRow";
-      row.innerHTML = `<b>Stół ${m.table}:</b> ${m.p1} vs ${m.p2} <span class="muted">(${m.label})</span>`;
-      elPoTables.appendChild(row);
-    });
-  }
+  playing.sort((a,b) => (a.table ?? 999) - (b.table ?? 999));
+  waiting.sort((a,b) => a.key.localeCompare(b.key));
 
-  if (waiting.length === 0) {
-    elPoQueue.innerHTML = "<div class='muted'>Brak oczekujących meczów play-off.</div>";
-  } else {
-    // sortuj wg fazy, potem indeksu
-    waiting.sort((a,b) => a.key.localeCompare(b.key));
-    waiting.forEach(m => {
-      const row = document.createElement("div");
-      row.className = "queueRow";
-      row.innerHTML = `${m.p1} vs ${m.p2} <span class="muted">(${m.label})</span>`;
-      elPoQueue.appendChild(row);
-    });
-  }
+  return { playing, waiting };
 }
+
 
 
 
