@@ -956,6 +956,9 @@ function generatePlayoffBracket() {
 }
 
 function displayPlayoffBracket(playoffBracket) {
+  currentPlayoffBracket = playoffBracket;
+window.currentPlayoffBracket = playoffBracket;
+  
   const container = document.getElementById('playoffContainer');
   if (!container) return;
 
@@ -1091,6 +1094,9 @@ function handlePlayoffResults(playoffBracket) {
   if (thirdWinner) console.log('3. miejsce:', thirdWinner);
 
   displayPlayoffBracket(playoffBracket);
+  currentPlayoffBracket = playoffBracket;
+localStorage.setItem("playoffBracket", JSON.stringify(currentPlayoffBracket));
+
 }
 
 // ===== Globalny stan play-off =====
