@@ -139,8 +139,8 @@ function playoffMetaBadge(playoff, key){
 }
 
 function renderPlayoff(playoff){
-
-
+  const el = document.getElementById("playoff");
+  if (!el) return; // <- to ucina błąd
   
   elPlayoff.innerHTML = "";
   if (!playoff) { elPlayoff.innerHTML = "<div>Brak play-off.</div>"; return; }
