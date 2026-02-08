@@ -23,9 +23,14 @@ function safePct(x){
 }
 
 function renderTables(system, playoff){
-  const tables = (system?.tournament?.tables || []).map(n => parseInt(n)).filter(n => n>=1 && n<=9).sort((a,b)=>a-b);
+  const tables = (system?.tournament?.tables || [])
+    .map(n => parseInt(n, 10))
+    .filter(n => Number.isFinite(n) && n>=1 && n<=9)
+    .sort((a,b)=>a-b);
+
   const map = new Map();
 
+  // 1) Liga: grające stoły
   const all = system?.tournament?.allMatches || [];
   all.forEach(m => {
     if (!m || m.table == null || m.completed || m.isBye) return;
@@ -36,33 +41,64 @@ function renderTables(system, playoff){
     });
   });
 
+  // helper: wynik z meta (różne wersje pól)
+  const getMetaScore = (meta) => {
+    if (!meta) return "";
+    const a = meta.scoreA ?? meta.a ?? meta.score1 ?? meta.p1 ?? null;
+    const b = meta.scoreB ?? meta.b ?? meta.score2 ?? meta.p2 ?? null;
+    if (a == null && b == null) return "";
+    return `${a ?? 0} : ${b ?? 0}`;
+  };
+
+  // 2) Play-off: grające stoły (priorytet nad ligą)
   if (playoff?._meta?.matches) {
     for (const [key, meta] of Object.entries(playoff._meta.matches)) {
       if (!meta || meta.table == null || meta.completed) continue;
+
       const [roundKey, idxStr] = key.split("_");
-      const idx = parseInt(idxStr || "0");
+      const idx = parseInt(idxStr || "0", 10);
+
       let match = null;
       if (roundKey === "roundOf12") match = playoff.roundOf12?.[idx];
-      if (roundKey === "quarterfinals") match = playoff.quarterfinals?.[idx];
-      if (roundKey === "semifinals") match = playoff.semifinals?.[idx];
-      if (roundKey === "final") match = playoff.final;
-      if (roundKey === "thirdPlace") match = playoff.thirdPlace;
+      else if (roundKey === "quarterfinals") match = playoff.quarterfinals?.[idx];
+      else if (roundKey === "semifinals") match = playoff.semifinals?.[idx];
+      else if (roundKey === "final") match = playoff.final;
+      else if (roundKey === "thirdPlace") match = playoff.thirdPlace;
+
       if (!match) continue;
+
       const [p1, p2] = match;
-      if (!p1 || !p2 || p1 === "bye" || p2 === "bye") continue;
-      if (!map.has(meta.table)) map.set(meta.table, { badge:"Play-off", names:`${p1} vs ${p2}`, score:"" });
+      if (!p1 || !p2) continue;
+
+      const a = String(p1).trim().toLowerCase();
+      const b = String(p2).trim().toLowerCase();
+      if (a === "bye" || b === "bye" || a === "???" || b === "???" || a === "tbd" || b === "tbd") continue;
+
+      // PRIORYTET: zawsze nadpisuj dany stół play-offem
+      map.set(meta.table, {
+        badge: "Play-off",
+        names: `${p1} vs ${p2}`,
+        score: getMetaScore(meta)
+      });
     }
   }
 
+  // render kafelków
   elTables.innerHTML = "";
-  if (tables.length === 0) { elTables.innerHTML = "<div>Brak wybranych stołów.</div>"; return; }
+  if (tables.length === 0) {
+    elTables.innerHTML = "<div>Brak wybranych stołów.</div>";
+    return;
+  }
 
   tables.forEach(t => {
     const data = map.get(t);
     const div = document.createElement("div");
     div.className = "tableTile";
     div.innerHTML = `
-      <div class="top"><span>Stół ${t}</span><span class="badge">${data ? data.badge : "Wolny"}</span></div>
+      <div class="top">
+        <span>Stół ${t}</span>
+        <span class="badge">${data ? data.badge : "Wolny"}</span>
+      </div>
       <div class="match">${data ? data.names : "—"}</div>
       <div class="score">${data?.score ? `Wynik: ${data.score}` : ""}</div>
     `;
@@ -70,23 +106,6 @@ function renderTables(system, playoff){
   });
 }
 
-function renderQueue(system){
-  const all = system?.tournament?.allMatches || [];
-  const waiting = all
-    .filter(m => m && !m.completed && !m.isBye && m.table == null)
-    .sort((a,b) => (a.globalIndex ?? 0) - (b.globalIndex ?? 0))
-    .slice(0, 10);
-
-  elQueue.innerHTML = "";
-  if (waiting.length === 0) { elQueue.innerHTML = "<div>Brak oczekujących meczów.</div>"; return; }
-
-  waiting.forEach(m => {
-    const div = document.createElement("div");
-    div.className = "queueItem";
-    div.innerHTML = `<div class="left">${m.player1} vs ${m.player2}</div><div class="right">Runda ${m.round ?? "?"}</div>`;
-    elQueue.appendChild(div);
-  });
-}
 
 function renderRanking(system){
   const players = system?.tournament?.players || [];
