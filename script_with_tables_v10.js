@@ -1137,6 +1137,8 @@ document.addEventListener('DOMContentLoaded', () => {
       initPlayoffScheduler(currentPlayoffBracket);
       displayPlayoffBracket(currentPlayoffBracket);
     }
+    localStorage.setItem("playoffBracket", JSON.stringify(currentPlayoffBracket));
+if (typeof saveToLocalStorage === "function") saveToLocalStorage();
   });
 
   document.getElementById('updatePlayoffBtn')?.addEventListener('click', () => {
