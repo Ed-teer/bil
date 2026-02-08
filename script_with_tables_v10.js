@@ -1001,11 +1001,11 @@ function displayPlayoffBracket(playoffBracket) {
 
 const onScoreChange = () => {
   handlePlayoffResults(playoffBracket);
-  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
+//  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
 };
 
-p1Score.addEventListener('input', onScoreChange);
-p2Score.addEventListener('input', onScoreChange);
+//p1Score.addEventListener('input', onScoreChange);
+//p2Score.addEventListener('input', onScoreChange);
 
 
     
