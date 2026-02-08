@@ -192,3 +192,98 @@ try {
   renderRanking(system);
   renderPlayoff(playoff);
 });
+
+function isRealPlayer(name) {
+  if (!name) return false;
+  const n = String(name).trim().toLowerCase();
+  return n !== "???" && n !== "tbd" && n !== "bye" && n !== "null";
+}
+
+function isReadyMatch(p1, p2) {
+  return isRealPlayer(p1) && isRealPlayer(p2);
+}
+
+function collectPlayoffMatches(playoff) {
+  if (!playoff) return [];
+
+  const out = [];
+
+  const pushRound = (roundName, roundKey, arr) => {
+    if (!Array.isArray(arr)) return;
+    arr.forEach((m, i) => {
+      const p1 = m?.[0] ?? null;
+      const p2 = m?.[1] ?? null;
+      out.push({
+        phase: roundName,
+        roundKey,
+        index: i,
+        p1, p2,
+        // opcjonalnie: jeżeli masz metadane z tabelą/stanem, podłączymy je tu
+        table: m?.table ?? null,
+        completed: !!m?.completed
+      });
+    });
+  };
+
+  pushRound("Baraże", "roundOf12", playoff.roundOf12);
+  pushRound("Ćwierćfinały", "quarterfinals", playoff.quarterfinals);
+  pushRound("Półfinały", "semifinals", playoff.semifinals);
+
+  // finał i 3 miejsce w Twoim bracket są jako [a,b]
+  if (Array.isArray(playoff.final) && playoff.final.length === 2) {
+    out.push({ phase: "Finał", roundKey: "final", index: 0, p1: playoff.final[0], p2: playoff.final[1], table: playoff.final?.table ?? null, completed: !!playoff.final?.completed });
+  }
+  if (Array.isArray(playoff.thirdPlace) && playoff.thirdPlace.length === 2) {
+    out.push({ phase: "3. miejsce", roundKey: "thirdPlace", index: 0, p1: playoff.thirdPlace[0], p2: playoff.thirdPlace[1], table: playoff.thirdPlace?.table ?? null, completed: !!playoff.thirdPlace?.completed });
+  }
+
+  return out;
+}
+
+function renderPlayoffTablesAndQueue(playoff) {
+  const elPoTables = document.getElementById("poTables");
+  const elPoQueue = document.getElementById("poQueue");
+  if (!elPoTables || !elPoQueue) return;
+
+  const matches = collectPlayoffMatches(playoff);
+
+  // gotowe do gry, ale nie zakończone
+  const ready = matches.filter(m => !m.completed && isReadyMatch(m.p1, m.p2));
+
+  // “grające” = mają stół
+  const playing = ready.filter(m => m.table != null);
+  // “oczekujące” = nie mają stołu
+  const waiting = ready.filter(m => m.table == null);
+
+  elPoTables.innerHTML = "";
+  if (playing.length === 0) {
+    elPoTables.innerHTML = "<div>Brak grających meczów play-off.</div>";
+  } else {
+    playing.forEach(m => {
+      const row = document.createElement("div");
+      row.className = "tableRow";
+      row.innerHTML = `<b>Stół ${m.table}:</b> ${m.p1} vs ${m.p2} <span class="muted">(${m.phase})</span>`;
+      elPoTables.appendChild(row);
+    });
+  }
+
+  elPoQueue.innerHTML = "";
+  if (waiting.length === 0) {
+    elPoQueue.innerHTML = "<div>Brak oczekujących meczów play-off.</div>";
+  } else {
+    waiting.forEach(m => {
+      const row = document.createElement("div");
+      row.className = "queueRow";
+      row.innerHTML = `${m.p1} vs ${m.p2} <span class="muted">(${m.phase})</span>`;
+      elPoQueue.appendChild(row);
+    });
+  }
+}
+
+
+
+
+
+
+
+
