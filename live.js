@@ -191,6 +191,8 @@ try {
   renderQueue(system);
   renderRanking(system);
   renderPlayoff(playoff);
+  renderPlayoffTablesAndQueue(playoff);
+
 });
 
 function isRealPlayer(name) {
@@ -198,46 +200,40 @@ function isRealPlayer(name) {
   const n = String(name).trim().toLowerCase();
   return n !== "???" && n !== "tbd" && n !== "bye" && n !== "null";
 }
-
 function isReadyMatch(p1, p2) {
   return isRealPlayer(p1) && isRealPlayer(p2);
 }
 
-function collectPlayoffMatches(playoff) {
+// UWAGA: tu na razie nie mamy stołów z play-off (jeśli są gdzie indziej, dopniemy)
+function collectPlayoffReadyMatches(playoff) {
   if (!playoff) return [];
 
   const out = [];
 
-  const pushRound = (roundName, roundKey, arr) => {
+  const pushRound = (phase, arr) => {
     if (!Array.isArray(arr)) return;
     arr.forEach((m, i) => {
       const p1 = m?.[0] ?? null;
       const p2 = m?.[1] ?? null;
-      out.push({
-        phase: roundName,
-        roundKey,
-        index: i,
-        p1, p2,
-        // opcjonalnie: jeżeli masz metadane z tabelą/stanem, podłączymy je tu
-        table: m?.table ?? null,
-        completed: !!m?.completed
-      });
+      if (!isReadyMatch(p1, p2)) return;
+      out.push({ phase, index: i, p1, p2, table: m?.table ?? null, completed: !!m?.completed });
     });
   };
 
-  pushRound("Baraże", "roundOf12", playoff.roundOf12);
-  pushRound("Ćwierćfinały", "quarterfinals", playoff.quarterfinals);
-  pushRound("Półfinały", "semifinals", playoff.semifinals);
+  pushRound("Baraże", playoff.roundOf12);
+  pushRound("Ćwierćfinały", playoff.quarterfinals);
+  pushRound("Półfinały", playoff.semifinals);
 
-  // finał i 3 miejsce w Twoim bracket są jako [a,b]
   if (Array.isArray(playoff.final) && playoff.final.length === 2) {
-    out.push({ phase: "Finał", roundKey: "final", index: 0, p1: playoff.final[0], p2: playoff.final[1], table: playoff.final?.table ?? null, completed: !!playoff.final?.completed });
+    const [p1, p2] = playoff.final;
+    if (isReadyMatch(p1, p2)) out.push({ phase: "Finał", index: 0, p1, p2, table: playoff.final?.table ?? null, completed: !!playoff.final?.completed });
   }
   if (Array.isArray(playoff.thirdPlace) && playoff.thirdPlace.length === 2) {
-    out.push({ phase: "3. miejsce", roundKey: "thirdPlace", index: 0, p1: playoff.thirdPlace[0], p2: playoff.thirdPlace[1], table: playoff.thirdPlace?.table ?? null, completed: !!playoff.thirdPlace?.completed });
+    const [p1, p2] = playoff.thirdPlace;
+    if (isReadyMatch(p1, p2)) out.push({ phase: "3. miejsce", index: 0, p1, p2, table: playoff.thirdPlace?.table ?? null, completed: !!playoff.thirdPlace?.completed });
   }
 
-  return out;
+  return out.filter(m => !m.completed);
 }
 
 function renderPlayoffTablesAndQueue(playoff) {
@@ -245,40 +241,37 @@ function renderPlayoffTablesAndQueue(playoff) {
   const elPoQueue = document.getElementById("poQueue");
   if (!elPoTables || !elPoQueue) return;
 
-  const matches = collectPlayoffMatches(playoff);
+  const matches = collectPlayoffReadyMatches(playoff);
 
-  // gotowe do gry, ale nie zakończone
-  const ready = matches.filter(m => !m.completed && isReadyMatch(m.p1, m.p2));
-
-  // “grające” = mają stół
-  const playing = ready.filter(m => m.table != null);
-  // “oczekujące” = nie mają stołu
-  const waiting = ready.filter(m => m.table == null);
+  // jeśli nie masz jeszcze tabel w danych play-off, wszystko wyląduje w "oczekujących"
+  const playing = matches.filter(m => m.table != null);
+  const waiting = matches.filter(m => m.table == null);
 
   elPoTables.innerHTML = "";
   if (playing.length === 0) {
-    elPoTables.innerHTML = "<div>Brak grających meczów play-off.</div>";
+    elPoTables.innerHTML = "<div class='muted'>Brak grających meczów play-off.</div>";
   } else {
     playing.forEach(m => {
-      const row = document.createElement("div");
-      row.className = "tableRow";
-      row.innerHTML = `<b>Stół ${m.table}:</b> ${m.p1} vs ${m.p2} <span class="muted">(${m.phase})</span>`;
-      elPoTables.appendChild(row);
+      const div = document.createElement("div");
+      div.className = "tableRow";
+      div.innerHTML = `<b>Stół ${m.table}:</b> ${m.p1} vs ${m.p2} <span class="muted">(${m.phase})</span>`;
+      elPoTables.appendChild(div);
     });
   }
 
   elPoQueue.innerHTML = "";
   if (waiting.length === 0) {
-    elPoQueue.innerHTML = "<div>Brak oczekujących meczów play-off.</div>";
+    elPoQueue.innerHTML = "<div class='muted'>Brak oczekujących meczów play-off.</div>";
   } else {
     waiting.forEach(m => {
-      const row = document.createElement("div");
-      row.className = "queueRow";
-      row.innerHTML = `${m.p1} vs ${m.p2} <span class="muted">(${m.phase})</span>`;
-      elPoQueue.appendChild(row);
+      const div = document.createElement("div");
+      div.className = "queueRow";
+      div.innerHTML = `${m.p1} vs ${m.p2} <span class="muted">(${m.phase})</span>`;
+      elPoQueue.appendChild(div);
     });
   }
 }
+
 
 
 
