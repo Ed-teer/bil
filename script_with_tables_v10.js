@@ -940,7 +940,8 @@ function generatePlayoffBracket() {
     final: [null, null],
     thirdPlace: [null, null]
   };
-
+bracket._scores = bracket._scores || {};
+  
   const playInPairs = [
     [4, 11], // 5 vs 12 -> ćw 1
     [5, 10], // 6 vs 11 -> ćw 3
@@ -999,13 +1000,24 @@ function displayPlayoffBracket(playoffBracket) {
     p2Score.classList.add('score-input');
     if (savedScores[p2Score.id] !== undefined) p2Score.value = savedScores[p2Score.id];
 
+  
+
+const keyA = `${roundKey}_${index}_a`;
+const keyB = `${roundKey}_${index}_b`;
+
+p1Score.value = (playoffBracket._scores[keyA] ?? p1Score.value ?? "");
+p2Score.value = (playoffBracket._scores[keyB] ?? p2Score.value ?? "");
+
 const onScoreChange = () => {
+  playoffBracket._scores[keyA] = p1Score.value;
+  playoffBracket._scores[keyB] = p2Score.value;
+
   handlePlayoffResults(playoffBracket);
-//  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
+  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
 };
 
-//p1Score.addEventListener('input', onScoreChange);
-//p2Score.addEventListener('input', onScoreChange);
+p1Score.addEventListener("input", onScoreChange);
+p2Score.addEventListener("input", onScoreChange);
 
 
     
