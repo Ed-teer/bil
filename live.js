@@ -293,15 +293,6 @@ try {
   renderRanking(system);
   const po = collectPlayoffPlayingAndWaiting(playoff).playing;
 
-// Dopnij play-off do tych samych “grających stołów”
-po.forEach(m => {
-  const row = document.createElement("div");
-  row.className = "tableRow";
-  row.innerHTML = `<b>Stół ${m.table}:</b> ${m.p1} vs ${m.p2} <span class="muted">(PO: ${m.label})</span>`;
-  elTables.appendChild(row); // <- tu użyj zmiennej kontenera stołów z Twojej funkcji
-});
-
-
 
 });
 
