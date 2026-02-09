@@ -473,7 +473,7 @@ function startTournament() {
     if (data.currentPlayoffBracket) {
       try {
         if (typeof currentPlayoffBracket !== 'undefined') currentPlayoffBracket = data.currentPlayoffBracket;
-        if (typeof displayPlayoffBracket === 'function') displayPlayoffBracket(data.currentPlayoffBracket);
+        if (typeof  === 'function') (data.currentPlayoffBracket);
       } catch (e) {
         console.warn('Nie udało się przywrócić play-off:', e);
       }
@@ -1096,6 +1096,7 @@ function handlePlayoffResults(playoffBracket) {
   displayPlayoffBracket(playoffBracket);
   currentPlayoffBracket = playoffBracket;
 localStorage.setItem("playoffBracket", JSON.stringify(currentPlayoffBracket));
+  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
 
 }
 
