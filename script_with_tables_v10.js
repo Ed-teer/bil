@@ -1139,17 +1139,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
  document.getElementById('generatePlayoffBtn')?.addEventListener('click', () => {
-  currentPlayoffBracket = generatePlayoffBracket();
-  if (!currentPlayoffBracket) return;
-
-  window.currentPlayoffBracket = currentPlayoffBracket; // <- ważne
-
-  initPlayoffScheduler(currentPlayoffBracket);
-  displayPlayoffBracket(currentPlayoffBracket);
-
-  localStorage.setItem("playoffBracket", JSON.stringify(currentPlayoffBracket));
-  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
-});
+    currentPlayoffBracket = generatePlayoffBracket();
+    if (currentPlayoffBracket) {
+      initPlayoffScheduler(currentPlayoffBracket);
+      displayPlayoffBracket(currentPlayoffBracket);
+    }
+    localStorage.setItem("playoffBracket", JSON.stringify(currentPlayoffBracket));
+if (typeof saveToLocalStorage === "function") saveToLocalStorage();
+  });
 
 
   document.getElementById('updatePlayoffBtn')?.addEventListener('click', () => {
