@@ -1138,15 +1138,25 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTablesPicker();
   });
 
- document.getElementById('generatePlayoffBtn')?.addEventListener('click', () => {
-    currentPlayoffBracket = generatePlayoffBracket();
-    if (currentPlayoffBracket) {
-      initPlayoffScheduler(currentPlayoffBracket);
-      displayPlayoffBracket(currentPlayoffBracket);
-    }
-    localStorage.setItem("playoffBracket", JSON.stringify(currentPlayoffBracket));
-if (typeof saveToLocalStorage === "function") saveToLocalStorage();
-  });
+document.getElementById('generatePlayoffBtn')?.addEventListener('click', () => {
+  currentPlayoffBracket = generatePlayoffBracket();
+  if (!currentPlayoffBracket) return;
+
+  window.currentPlayoffBracket = currentPlayoffBracket;
+
+  initPlayoffScheduler(currentPlayoffBracket);
+  displayPlayoffBracket(currentPlayoffBracket);
+
+  // najpierw standardowy zapis v10
+  if (typeof saveToLocalStorage === "function") saveToLocalStorage();
+
+  // a potem NA PEWNO utrwal play-off (żeby nic go nie wyczyściło)
+  localStorage.setItem("playoffBracket", JSON.stringify(currentPlayoffBracket));
+
+  // opcjonalnie: jeśli masz dostęp do tej funkcji w tym pliku, wymuś natychmiastowy zapis do Firestore
+  if (typeof saveStateToFirestore === "function") saveStateToFirestore();
+});
+
 
 
   document.getElementById('updatePlayoffBtn')?.addEventListener('click', () => {
