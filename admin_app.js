@@ -33,6 +33,11 @@ async function saveStateToFirestore() {
 
   const systemJson = localStorage.getItem("tournamentSystem");   // <-- STRING
   const playoffJson = localStorage.getItem("playoffBracket");    // <-- STRING (albo null)
+  const payload = {
+  systemJson,
+  playoffJson: (typeof playoffJson === "string" && playoffJson !== "null" && playoffJson !== "") ? playoffJson : null,
+  updatedAt: serverTimestamp(),
+};
 
   // jeśli v10 jeszcze nic nie zapisał, nie wysyłaj
   if (!systemJson) return;
